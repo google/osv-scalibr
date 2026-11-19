@@ -252,6 +252,175 @@ func TestParsed_MarshalJSON(t *testing.T) {
 	}
 }
 
+func TestParsed_NormalizePackageName(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+		eco  osvconstants.Ecosystem
+	}{
+		{
+			name: "Microsoft.OpenApi.Kiota",
+			want: "microsoft.openapi.kiota",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Newtonsoft_Json",
+			want: "newtonsoft_json",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Newtonsoft.Json",
+			want: "newtonsoft.json",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Foo_Bar-Baz",
+			want: "foo_bar-baz",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "lol_html",
+			want: "lol-html",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "Serde_Json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "serde_json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "serde-json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "jquery-querybuilder",
+			want: "jquery-querybuilder",
+			eco:  osvconstants.EcosystemNPM,
+		},
+		{
+			name: "jQuery-QueryBuilder",
+			want: "jQuery-QueryBuilder",
+			eco:  osvconstants.EcosystemNPM,
+		},
+		{
+			name: "requests",
+			want: "requests",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "pip",
+			want: "pip",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "a",
+			want: "a",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "python-dateutil",
+			want: "python-dateutil",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "scikit-learn",
+			want: "scikit-learn",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "nvidia-cudnn-cu12",
+			want: "nvidia-cudnn-cu12",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Django",
+			want: "django",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "PyYAML",
+			want: "pyyaml",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "MarkupSafe",
+			want: "markupsafe",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "typing_extensions",
+			want: "typing-extensions",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "opencv_python_headless",
+			want: "opencv-python-headless",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "zope.interface",
+			want: "zope-interface",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "ruamel.yaml.clib",
+			want: "ruamel-yaml-clib",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Flask_SQLAlchemy",
+			want: "flask-sqlalchemy",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Sphinx_RTD.Theme",
+			want: "sphinx-rtd-theme",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "foo__bar",
+			want: "foo-bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "foo--bar",
+			want: "foo-bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Foo._-Bar",
+			want: "foo-bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Foo_Bar",
+			want: "Foo_Bar",
+			eco:  "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.eco)+"/"+tt.name, func(t *testing.T) {
+			parsed := osvecosystem.FromEcosystem(tt.eco)
+
+			got := parsed.NormalizePackageName(tt.name)
+
+			if got != tt.want {
+				t.Errorf("%s.NormalizePackageName() = %v, want %v", tt.eco, got, tt.want)
+			}
+
+			if again := parsed.NormalizePackageName(got); again != got {
+				t.Errorf("%s.NormalizePackageName(%q) is not idempotent: got %q", tt.eco, got, again)
+			}
+		})
+	}
+}
+
 func TestParsed_String(t *testing.T) {
 	tests := buildCases(t)
 	for _, tt := range tests {
