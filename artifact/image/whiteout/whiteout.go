@@ -29,10 +29,20 @@ import (
 const (
 	// WhiteoutPrefix is the prefix found on whiteout files.
 	WhiteoutPrefix = ".wh."
-	// WhiteoutDirPrefix is the prefix found on whiteout directories. This means the directory cannot
-	// hold any more files in the current layer, as well as future layers.
+	// WhiteoutOpaqueDir is the filename for an opaque whiteout entry.
+	// Any file with this name indicates that all children of the directory in lower layers are hidden.
+	WhiteoutOpaqueDir = ".wh..wh..opq"
+	// WhiteoutDirPrefix is the legacy prefix found on whiteout directories.
+	//
+	// Deprecated: Use WhiteoutOpaqueDir.
 	WhiteoutDirPrefix = ".wh..wh..opq."
 )
+
+// IsOpaqueWhiteout returns true if a filename or path represents an opaque whiteout entry (.wh..wh..opq).
+func IsOpaqueWhiteout(p string) bool {
+	_, file := path.Split(p)
+	return file == WhiteoutOpaqueDir || file == strings.TrimSuffix(WhiteoutDirPrefix, ".")
+}
 
 // Files outputs all of the whiteout files found in an FS.
 func Files(scalibrfs scalibrfs.FS) (map[string]struct{}, error) {
@@ -47,7 +57,7 @@ func Files(scalibrfs scalibrfs.FS) (map[string]struct{}, error) {
 
 		base := filepath.Base(path)
 
-		if d.Type().IsRegular() && strings.HasPrefix(base, WhiteoutPrefix) {
+		if d.Type().IsRegular() && (strings.HasPrefix(base, WhiteoutPrefix) || base == WhiteoutOpaqueDir) {
 			whiteouts[path] = struct{}{}
 		}
 

@@ -100,6 +100,7 @@ type chainLayer struct {
 	chainID      digest.Digest
 	fileNodeTree *RootNode
 	latestLayer  image.Layer
+	opaqueDirs   map[string]struct{}
 }
 
 // FS returns a scalibrfs.FS that can be used to scan for inventory.
