@@ -46,7 +46,7 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 3),
 				},
 			},
 		},
@@ -64,13 +64,13 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 3),
 				},
 				{
 					Name:     "Newtonsoft.Json",
 					Version:  "13.0.1",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 4),
 				},
 			},
 		},
@@ -90,19 +90,35 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 3),
 				},
 				{
 					Name:     "Newtonsoft.Json",
 					Version:  "13.0.1",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 6),
 				},
 			},
 		},
 		{
+			name:    "empty xml",
+			xml:     "",
+			wantErr: true,
+		},
+		{
 			name:    "invalid xml",
 			xml:     "not\nxml",
+			wantErr: true,
+		},
+		{
+			name: "invalid xml inside PackageReference",
+			xml: `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="LiteDB" Version="5.0.12">
+      <UnclosedTag>
+    </PackageReference>
+  </ItemGroup>
+</Project>`,
 			wantErr: true,
 		},
 		{
@@ -177,13 +193,37 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 3),
 				},
 				{
 					Name:     "Newtonsoft.Json",
 					Version:  "13.0.1",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("project.csproj"),
+					Location: extractor.LocationFromPathAndLine("project.csproj", 5),
+				},
+			},
+		},
+		{
+			name: "duplicate package references",
+			xml: `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="LiteDB" Version="5.0.12" />
+    <PackageReference Include="LiteDB" Version="5.0.12" />
+  </ItemGroup>
+</Project>`,
+			filePath: "project.csproj",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("project.csproj", 3),
+				},
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("project.csproj", 4),
 				},
 			},
 		},
@@ -200,7 +240,7 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("path/to/Directory.Packages.props"),
+					Location: extractor.LocationFromPathAndLine("path/to/Directory.Packages.props", 3),
 				},
 			},
 		},
