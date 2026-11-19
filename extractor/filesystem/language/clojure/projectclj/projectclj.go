@@ -17,14 +17,13 @@
 package projectclj
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -44,11 +43,6 @@ const (
 
 	// defaultMaxFileSizeBytes is the maximum file size this extractor will process.
 	defaultMaxFileSizeBytes = 10 * units.MiB // 10 MB
-
-	// maxNestingDepth bounds how deeply forms may nest. Real project.clj files
-	// nest a handful of levels; the bound keeps a hostile file from exhausting
-	// the stack.
-	maxNestingDepth = 256
 )
 
 // defaultProfiles are the profiles Leiningen applies without being asked:
@@ -56,7 +50,8 @@ const (
 // added when running tests. Other profiles, such as version matrices like
 // :1.10 or tooling like :benchmark, are only active under an explicit
 // `lein with-profile`, and `lein pom` leaves them out too, so their
-// dependencies are not reported.
+// dependencies are not reported unless a default profile includes them by
+// name; see addProfile.
 var defaultProfiles = map[string]bool{
 	"base":     true,
 	"system":   true,
@@ -86,6 +81,9 @@ var defaultProfiles = map[string]bool{
 // and may be an unquoted reference (~sym) to a string defined with a top-level
 // def. Everything is reported against the Maven ecosystem, since every
 // Leiningen coordinate is a Maven groupId:artifactId.
+//
+// A profile is a map, the name of another profile, or a composite vector of
+// both, as in :dev [:project/dev {:dependencies [...]}].
 //
 // :plugins are deliberately not reported: they are Leiningen build plugins
 // that run in the build tool, not dependencies of the project. Dependencies
@@ -161,7 +159,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	r := &reader{in: bufio.NewReader(input.Reader), line: 1}
+	r := newReader(input.Reader)
 	defs := map[string]string{}
 
 	// Top-level forms are read one at a time. String defs seen before the
@@ -184,13 +182,30 @@ func (e Extractor) extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 		switch f.children[0].text {
 		case "def":
-			if len(f.children) == 3 && f.children[1].kind == kindSymbol && f.children[2].kind == kindString {
-				defs[f.children[1].text] = f.children[2].text
+			if name, value, ok := stringDef(f); ok {
+				defs[name] = value
 			}
 		case "defproject":
 			return inventory.Inventory{Packages: packagesFromProject(f, defs, input.Path)}, nil
 		}
 	}
+}
+
+// stringDef reads (def name "value") or (def name "docstring" "value").
+func stringDef(def *form) (name, value string, ok bool) {
+	args := def.children[1:]
+	if len(args) != 2 && len(args) != 3 {
+		return "", "", false
+	}
+	if args[0].kind != kindSymbol {
+		return "", "", false
+	}
+	for _, arg := range args[1:] {
+		if arg.kind != kindString {
+			return "", "", false
+		}
+	}
+	return args[0].text, args[len(args)-1].text, true
 }
 
 // packagesFromProject collects the dependencies of a defproject form.
@@ -205,40 +220,33 @@ func packagesFromProject(project *form, defs map[string]string, path string) []*
 		}
 	}
 
-	c := &collector{packages: []*extractor.Package{}, seen: map[string]bool{}, path: path}
+	c := &collector{
+		packages: []*extractor.Package{},
+		seen:     map[string]*javalockfile.Metadata{},
+		reported: map[*form]*javalockfile.Metadata{},
+		path:     path,
+	}
 	for _, dep := range vectorElems(opts[":dependencies"]) {
 		c.add(dep, defs, managed, "")
 	}
 
-	// :profiles {:dev {:dependencies [...]}, :provided [:base {:dependencies [...]}]}
-	// A profile is either a map or a composite vector of maps and the names of
-	// other profiles; only the maps declare dependencies.
+	// :profiles {:dev {:dependencies [...]}, :uberjar {:aot :all}}
 	if profiles := opts[":profiles"]; profiles != nil && profiles.kind == kindMap {
+		byName := map[string]*form{}
+		var active []string
 		for i := 0; i+1 < len(profiles.children); i += 2 {
-			key, val := profiles.children[i], profiles.children[i+1]
+			key := profiles.children[i]
 			if key.kind != kindKeyword {
 				continue
 			}
-			group := strings.TrimPrefix(key.text, ":")
-			if !defaultProfiles[group] {
-				continue
+			name := strings.TrimPrefix(key.text, ":")
+			if _, dup := byName[name]; !dup && defaultProfiles[name] {
+				active = append(active, name)
 			}
-			var maps []*form
-			switch val.kind {
-			case kindMap:
-				maps = []*form{val}
-			case kindVector:
-				for _, el := range val.children {
-					if el.kind == kindMap {
-						maps = append(maps, el)
-					}
-				}
-			}
-			for _, m := range maps {
-				for _, dep := range vectorElems(keywordPairs(m.children, 0)[":dependencies"]) {
-					c.add(dep, defs, managed, group)
-				}
-			}
+			byName[name] = profiles.children[i+1]
+		}
+		for _, name := range active {
+			c.addProfile(name, byName, defs, managed)
 		}
 	}
 
@@ -247,8 +255,54 @@ func packagesFromProject(project *form, defs map[string]string, path string) []*
 
 type collector struct {
 	packages []*extractor.Package
-	seen     map[string]bool
+	// seen holds what has been reported, to drop exact repetitions.
+	seen map[string]*javalockfile.Metadata
+	// reported maps a dependency vector to the metadata of its package.
+	reported map[*form]*javalockfile.Metadata
 	path     string
+}
+
+// addProfile reports the dependencies of the default profile name, with the
+// name as their dependency group.
+//
+// A profile is a map, the name of another profile, or a composite vector of
+// both. Leiningen resolves the names recursively against :profiles
+// (lookup-profile in leiningen.core.project), so they are followed here too
+// and what they declare is reported as part of the profile that includes
+// them. Names that this file does not define, such as :profiles/dev from a
+// developer's own profiles.clj, contribute nothing. Other default profiles
+// are not followed: they are reported under their own name. A dependency
+// that several default profiles include this way is reported once, with all
+// of them as its groups.
+func (c *collector) addProfile(name string, profiles map[string]*form, defs, managed map[string]string) {
+	// Each name is expanded once, which also ends reference cycles.
+	visited := map[string]bool{name: true}
+	pending := []*form{profiles[name]}
+	for len(pending) > 0 {
+		f := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		switch f.kind {
+		case kindMap:
+			for _, dep := range vectorElems(keywordPairs(f.children, 0)[":dependencies"]) {
+				c.add(dep, defs, managed, name)
+			}
+		case kindVector:
+			// Pushed in reverse so that the parts are handled in the order
+			// they are written.
+			for i := len(f.children) - 1; i >= 0; i-- {
+				pending = append(pending, f.children[i])
+			}
+		case kindKeyword:
+			ref := strings.TrimPrefix(f.text, ":")
+			if visited[ref] || defaultProfiles[ref] {
+				continue
+			}
+			visited[ref] = true
+			if p := profiles[ref]; p != nil {
+				pending = append(pending, p)
+			}
+		}
+	}
 }
 
 // add reports one dependency vector. profile is empty for the top-level
@@ -257,6 +311,14 @@ func (c *collector) add(dep *form, defs, managed map[string]string, profile stri
 	d, ok := parseDependency(dep, defs, managed)
 	if !ok || d.version == "" {
 		// Without a version there is nothing to match against advisories.
+		return
+	}
+
+	if md, ok := c.reported[dep]; ok {
+		// The same declaration, reached again through another profile.
+		if !slices.Contains(md.DepGroupVals, profile) {
+			md.DepGroupVals = append(md.DepGroupVals, profile)
+		}
 		return
 	}
 
@@ -270,22 +332,25 @@ func (c *collector) add(dep *form, defs, managed map[string]string, profile stri
 
 	name := d.group + ":" + d.artifact
 	key := strings.Join(append([]string{name, d.version, d.classifier}, groups...), "\x00")
-	if c.seen[key] {
+	if md, ok := c.seen[key]; ok {
+		c.reported[dep] = md
 		return
 	}
-	c.seen[key] = true
 
+	md := &javalockfile.Metadata{
+		ArtifactID:   d.artifact,
+		GroupID:      d.group,
+		Type:         d.extension,
+		Classifier:   d.classifier,
+		DepGroupVals: groups,
+	}
+	c.seen[key] = md
+	c.reported[dep] = md
 	c.packages = append(c.packages, &extractor.Package{
 		Name:     name,
 		Version:  d.version,
 		PURLType: purl.TypeMaven,
-		Metadata: &javalockfile.Metadata{
-			ArtifactID:   d.artifact,
-			GroupID:      d.group,
-			Type:         d.extension,
-			Classifier:   d.classifier,
-			DepGroupVals: groups,
-		},
+		Metadata: md,
 		Location: extractor.LocationFromPathAndLine(c.path, dep.line),
 	})
 }
@@ -372,326 +437,4 @@ func stringValue(f *form) string {
 		return ""
 	}
 	return strings.TrimPrefix(f.text, ":")
-}
-
-// ---------------------------------------------------------------------------
-// A minimal streaming reader for the subset of Clojure syntax that appears in
-// project.clj files. It only has to tell collections, symbols, keywords and
-// strings apart; everything else is read and kept as an opaque form so that
-// it never desynchronises the surrounding structure.
-
-type formKind int
-
-const (
-	kindOther formKind = iota
-	kindList
-	kindVector
-	kindMap
-	kindSet
-	kindSymbol
-	kindKeyword
-	kindString
-	kindUnquote // ~form or ~@form
-)
-
-type form struct {
-	kind     formKind
-	text     string
-	children []*form
-	line     int
-}
-
-// closeError is returned by read when it meets a closing delimiter instead of
-// a form. The collection reader uses it to find the end of its elements.
-type closeError struct{ delim rune }
-
-func (e closeError) Error() string {
-	return fmt.Sprintf("unexpected closing delimiter %q", e.delim)
-}
-
-type reader struct {
-	in   *bufio.Reader
-	line int
-}
-
-func (r *reader) next() (rune, error) {
-	c, _, err := r.in.ReadRune()
-	if err == nil && c == '\n' {
-		r.line++
-	}
-	return c, err
-}
-
-func (r *reader) unread(c rune) {
-	_ = r.in.UnreadRune()
-	if c == '\n' {
-		r.line--
-	}
-}
-
-func isWhitespace(c rune) bool { return unicode.IsSpace(c) || c == ',' }
-
-func isDelimiter(c rune) bool {
-	return isWhitespace(c) || strings.ContainsRune(`()[]{}";`, c)
-}
-
-// skipBlank consumes whitespace and line comments.
-func (r *reader) skipBlank() error {
-	for {
-		c, err := r.next()
-		if err != nil {
-			return err
-		}
-		if c == ';' {
-			for c != '\n' {
-				if c, err = r.next(); err != nil {
-					return err
-				}
-			}
-			continue
-		}
-		if !isWhitespace(c) {
-			r.unread(c)
-			return nil
-		}
-	}
-}
-
-// read returns the next form. It returns io.EOF when the input ends between
-// forms and a closeError when it meets a closing delimiter.
-func (r *reader) read(depth int) (*form, error) {
-	if depth > maxNestingDepth {
-		return nil, fmt.Errorf("line %d: forms nested deeper than %d", r.line, maxNestingDepth)
-	}
-	if err := r.skipBlank(); err != nil {
-		return nil, err
-	}
-	line := r.line
-	c, err := r.next()
-	if err != nil {
-		return nil, err
-	}
-
-	switch c {
-	case '(':
-		return r.readColl(kindList, ')', line, depth)
-	case '[':
-		return r.readColl(kindVector, ']', line, depth)
-	case '{':
-		return r.readColl(kindMap, '}', line, depth)
-	case ')', ']', '}':
-		return nil, closeError{delim: c}
-	case '"':
-		s, err := r.readString()
-		if err != nil {
-			return nil, err
-		}
-		return &form{kind: kindString, text: s, line: line}, nil
-	case '\'', '`', '@':
-		// Quote, syntax quote and deref do not change what is being declared.
-		return r.readOperand(depth)
-	case '~':
-		next, err := r.next()
-		if err != nil {
-			return nil, unexpectedEOF(err)
-		}
-		if next != '@' {
-			r.unread(next)
-		}
-		inner, err := r.readOperand(depth)
-		if err != nil {
-			return nil, err
-		}
-		return &form{kind: kindUnquote, children: []*form{inner}, line: line}, nil
-	case '^':
-		// Metadata such as ^:replace: read and drop it, keep the form it annotates.
-		if _, err := r.readOperand(depth); err != nil {
-			return nil, err
-		}
-		return r.readOperand(depth)
-	case '\\':
-		// Character literal: \a, \newline, \] ...
-		if _, err := r.next(); err != nil {
-			return nil, unexpectedEOF(err)
-		}
-		if _, err := r.readToken(); err != nil {
-			return nil, err
-		}
-		return &form{kind: kindOther, line: line}, nil
-	case '#':
-		return r.readDispatch(line, depth)
-	}
-
-	r.unread(c)
-	tok, err := r.readToken()
-	if err != nil {
-		return nil, err
-	}
-	switch {
-	case strings.HasPrefix(tok, ":"):
-		return &form{kind: kindKeyword, text: tok, line: line}, nil
-	case isNumber(tok):
-		return &form{kind: kindOther, text: tok, line: line}, nil
-	default:
-		return &form{kind: kindSymbol, text: tok, line: line}, nil
-	}
-}
-
-// readOperand reads the form a prefix such as ' or ^ applies to. Running
-// out of input or meeting a closing delimiter there is malformed input.
-func (r *reader) readOperand(depth int) (*form, error) {
-	f, err := r.read(depth)
-	if ce := (closeError{}); errors.As(err, &ce) {
-		return nil, fmt.Errorf("line %d: missing form before %q", r.line, ce.delim)
-	}
-	if err != nil {
-		return nil, unexpectedEOF(err)
-	}
-	return f, nil
-}
-
-func (r *reader) readColl(kind formKind, closing rune, line, depth int) (*form, error) {
-	f := &form{kind: kind, line: line}
-	for {
-		el, err := r.read(depth + 1)
-		if ce := (closeError{}); errors.As(err, &ce) {
-			if ce.delim != closing {
-				return nil, fmt.Errorf("line %d: expected %q, found %q", r.line, closing, ce.delim)
-			}
-			return f, nil
-		}
-		if err != nil {
-			return nil, unexpectedEOF(err)
-		}
-		f.children = append(f.children, el)
-	}
-}
-
-func (r *reader) readDispatch(line, depth int) (*form, error) {
-	c, err := r.next()
-	if err != nil {
-		return nil, unexpectedEOF(err)
-	}
-	switch c {
-	case '{':
-		return r.readColl(kindSet, '}', line, depth)
-	case '_':
-		// #_ discards the next form entirely.
-		if _, err := r.readOperand(depth); err != nil {
-			return nil, err
-		}
-		return r.read(depth)
-	case '"':
-		// Regex literal.
-		if _, err := r.readString(); err != nil {
-			return nil, err
-		}
-		return &form{kind: kindOther, line: line}, nil
-	case '(':
-		// Anonymous function: read it but never treat it as data.
-		f, err := r.readColl(kindList, ')', line, depth)
-		if err != nil {
-			return nil, err
-		}
-		f.kind = kindOther
-		return f, nil
-	case '?':
-		// Reader conditional #?(...) or #?@(...): kept opaque.
-		next, err := r.next()
-		if err != nil {
-			return nil, unexpectedEOF(err)
-		}
-		if next != '@' {
-			r.unread(next)
-		}
-		f, err := r.readOperand(depth)
-		if err != nil {
-			return nil, err
-		}
-		return &form{kind: kindOther, children: f.children, line: line}, nil
-	case '\'':
-		// Var quote #'sym.
-		return r.readOperand(depth)
-	case '#':
-		// Symbolic value such as ##Inf.
-		if _, err := r.readToken(); err != nil {
-			return nil, err
-		}
-		return &form{kind: kindOther, line: line}, nil
-	case ':':
-		// Namespaced map #:ns{...}: drop the prefix, keep the map.
-		if _, err := r.readToken(); err != nil {
-			return nil, err
-		}
-		return r.readOperand(depth)
-	}
-	// Tagged literal such as #inst "...": the tag, then the tagged form.
-	r.unread(c)
-	if _, err := r.readToken(); err != nil {
-		return nil, err
-	}
-	if _, err := r.readOperand(depth); err != nil {
-		return nil, err
-	}
-	return &form{kind: kindOther, line: line}, nil
-}
-
-func (r *reader) readString() (string, error) {
-	var b strings.Builder
-	for {
-		c, err := r.next()
-		if err != nil {
-			return "", unexpectedEOF(err)
-		}
-		switch c {
-		case '"':
-			return b.String(), nil
-		case '\\':
-			esc, err := r.next()
-			if err != nil {
-				return "", unexpectedEOF(err)
-			}
-			switch esc {
-			case 'n':
-				b.WriteRune('\n')
-			case 't':
-				b.WriteRune('\t')
-			default:
-				b.WriteRune(esc)
-			}
-		default:
-			b.WriteRune(c)
-		}
-	}
-}
-
-// readToken reads a symbol, keyword or number up to the next delimiter.
-func (r *reader) readToken() (string, error) {
-	var b strings.Builder
-	for {
-		c, err := r.next()
-		if errors.Is(err, io.EOF) {
-			return b.String(), nil
-		}
-		if err != nil {
-			return "", err
-		}
-		if isDelimiter(c) {
-			r.unread(c)
-			return b.String(), nil
-		}
-		b.WriteRune(c)
-	}
-}
-
-func isNumber(tok string) bool {
-	t := strings.TrimLeft(tok, "+-")
-	return t != "" && unicode.IsDigit(rune(t[0]))
-}
-
-func unexpectedEOF(err error) error {
-	if errors.Is(err, io.EOF) {
-		return io.ErrUnexpectedEOF
-	}
-	return err
 }
