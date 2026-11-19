@@ -16,6 +16,7 @@
 package projectassetsjson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,10 +26,12 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/tidwall/gjson"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -139,10 +142,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	p, err := parse(input.Reader)
+	b, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read project.assets.json file: %w", err)
+	}
+
+	p, err := parse(bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
+
+	finder := linefinder.NewJSONLineFinder(b)
 
 	var res []*extractor.Package
 	seen := make(map[string]struct{}) // dedup: name@version
@@ -158,11 +168,13 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		}
 		seen[key] = struct{}{}
 
+		// For duplicate keys in libraries, gjson returns the first occurrence.
+		line := finder.LineOf("libraries." + gjson.Escape(name+"/"+version))
 		res = append(res, &extractor.Package{
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypeNuget,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, line),
 		})
 	}
 
