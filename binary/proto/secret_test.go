@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	veleshttp "github.com/google/osv-scalibr/veles/secrets/http"
+	"github.com/google/osv-scalibr/veles/secrets/paypal"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -98,6 +99,28 @@ var (
 		},
 	}
 
+	secretPayPalCredentialsStruct = &inventory.Secret{
+		Secret: paypal.Credentials{
+			ID:     "AYSq3RDGsmBLJE-otTkBtMjBRd1TCQwFf9RGfwddNXWz0uFU9ztymylOhRS",
+			Secret: "EGnHDxD_qRPdaLdZz8iKr8N7MzF-YHPTkjs6NKYQvQSBngp4PTTVWkPZRbL",
+		},
+		Location: location.FromPath("/foo/bar/baz.json"),
+	}
+	secretPayPalCredentialsProto = &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_PaypalCredentials{
+				PaypalCredentials: &spb.SecretData_PayPalCredentials{
+					Id:     "AYSq3RDGsmBLJE-otTkBtMjBRd1TCQwFf9RGfwddNXWz0uFU9ztymylOhRS",
+					Secret: "EGnHDxD_qRPdaLdZz8iKr8N7MzF-YHPTkjs6NKYQvQSBngp4PTTVWkPZRbL",
+				},
+			},
+		},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
+			},
+		},
+	}
 	secretGCPOAuth2ClientCredentialsStruct = &inventory.Secret{
 		Secret: gcpoauth2client.Credentials{
 			ID:     "12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
@@ -189,6 +212,11 @@ func TestSecretToProto(t *testing.T) {
 			want: secretGCPOAuth2ClientCredentialsProto,
 		},
 		{
+			desc: "PayPal_credentials",
+			s:    secretPayPalCredentialsStruct,
+			want: secretPayPalCredentialsProto,
+		},
+		{
 			desc: "HTTP_CSRF",
 			s:    secretHTTPCSRFStruct,
 			want: secretHTTPCSRFProto,
@@ -267,6 +295,11 @@ func TestSecretToStruct(t *testing.T) {
 			desc: "GCP_OAuth2_client_credentials",
 			s:    secretGCPOAuth2ClientCredentialsProto,
 			want: secretGCPOAuth2ClientCredentialsStruct,
+		},
+		{
+			desc: "PayPal_credentials",
+			s:    secretPayPalCredentialsProto,
+			want: secretPayPalCredentialsStruct,
 		},
 		{
 			desc: "HTTP_CSRF",
