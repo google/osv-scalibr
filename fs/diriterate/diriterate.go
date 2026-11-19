@@ -17,7 +17,6 @@
 package diriterate
 
 import (
-	"errors"
 	"io"
 	"io/fs"
 
@@ -59,7 +58,8 @@ func ReadDir(fsys scalibrfs.FS, name string) (*DirIterator, error) {
 func readDirAll(fsys scalibrfs.FS, name string) (*DirIterator, error) {
 	files, err := fsys.ReadDir(name)
 	if err != nil {
-		return nil, &fs.PathError{Op: "readdir", Path: name, Err: errors.New("not implemented")}
+		// Return the error as-is so callers can still classify it (e.g. with os.IsPermission).
+		return nil, err
 	}
 	return &DirIterator{files: files, curr: 0}, nil
 }
