@@ -49,13 +49,21 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 		vulns []*osvpb.Vulnerability
 	}
 	vkPatches := make(map[resolve.VersionKey][]patch)
+	// Tracks whether each vulnerable version is depended on directly by the root (NodeID 0).
+	// The same version may appear at multiple places in the graph; since in-place upgrades
+	// every instance, it is considered direct if any of those instances are direct.
+	vkDirect := make(map[resolve.VersionKey]bool)
 	for _, v := range graph.Vulns {
 		for _, sg := range v.Subgraphs {
 			// Check if any of the existing patches fixes this vulnerability.
-			vk := sg.Nodes[sg.Dependency].Version
+			node := sg.Nodes[sg.Dependency]
+			vk := node.Version
 			if opts.UpgradeConfig.Get(vk.Name) == upgrade.None {
 				// Don't try to fix vulns in packages that aren't allowed to be upgraded.
 				continue
+			}
+			if slices.ContainsFunc(node.Parents, func(e resolve.Edge) bool { return e.From == 0 }) {
+				vkDirect[vk] = true
 			}
 			foundFix := false
 			for i, p := range vkPatches[vk] {
@@ -105,7 +113,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 						Name:        vk.Name,
 						VersionFrom: vk.Version,
 						VersionTo:   p.vk.Version,
-						Transitive:  true,
+						Transitive:  !vkDirect[vk],
 					},
 				},
 			}

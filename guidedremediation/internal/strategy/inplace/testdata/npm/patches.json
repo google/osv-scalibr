@@ -5,7 +5,7 @@
         "name": "d",
         "versionFrom": "1.0.0",
         "versionTo": "1.2.3",
-        "transitive": true
+        "transitive": false
       }
     ],
     "fixed": [
@@ -35,7 +35,7 @@
         "name": "d",
         "versionFrom": "1.0.0",
         "versionTo": "1.4.0",
-        "transitive": true
+        "transitive": false
       }
     ],
     "fixed": [
@@ -65,7 +65,7 @@
         "name": "d",
         "versionFrom": "1.2.3",
         "versionTo": "1.4.0",
-        "transitive": true
+        "transitive": false
       }
     ],
     "fixed": [
