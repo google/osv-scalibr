@@ -146,18 +146,28 @@ func resolveName(name string, argsMap map[string]string) string {
 	return resolved
 }
 
+// parseName splits an image reference of the form
+// [registry[:port]/]repository[:tag][@digest] into the image name and version.
+//
+// If a digest is present it is returned as the version, since it is the
+// immutable identifier. Otherwise the tag is used, defaulting to "latest".
 func parseName(name string) (string, string) {
-	if strings.Contains(name, "@") {
-		parts := strings.SplitN(name, "@", 2)
-		return parts[0], parts[1]
+	ref, digest, hasDigest := strings.Cut(name, "@")
+
+	// A ':' only separates the tag if it comes after the last '/'. Otherwise it
+	// belongs to the registry host:port (e.g. "localhost:5000/app").
+	repo, tag := ref, ""
+	if i := strings.LastIndex(ref, ":"); i > strings.LastIndex(ref, "/") {
+		repo, tag = ref[:i], ref[i+1:]
 	}
 
-	if strings.Contains(name, ":") {
-		parts := strings.SplitN(name, ":", 2)
-		return parts[0], parts[1]
+	if hasDigest {
+		return repo, digest
 	}
-
-	return name, "latest"
+	if tag != "" {
+		return repo, tag
+	}
+	return repo, "latest"
 }
 
 func toMap(args []mbi.ArgCommand) map[string]string {
