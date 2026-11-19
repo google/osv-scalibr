@@ -30,12 +30,15 @@
 package packagesconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
+	"io"
 	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -129,8 +132,26 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 type dotNETPackage struct {
-	ID      string `xml:"id,attr"`
-	Version string `xml:"version,attr"`
+	ID         string
+	Version    string
+	ByteOffset int
+}
+
+// UnmarshalXML implements xml.Unmarshaler to record the byte offset of each
+// <package> element. Note that d.InputOffset() returns the stream position
+// immediately after the opening <package ...> tag, so multi-line <package>
+// start tags resolve to the closing line of the opening tag.
+func (p *dotNETPackage) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	p.ByteOffset = int(d.InputOffset())
+	for _, attr := range start.Attr {
+		switch attr.Name.Local {
+		case "id":
+			p.ID = attr.Value
+		case "version":
+			p.Version = attr.Value
+		}
+	}
+	return d.Skip()
 }
 
 type dotNETPackages struct {
@@ -139,12 +160,19 @@ type dotNETPackages struct {
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	b, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, err
+	}
+
 	var packages dotNETPackages
-	decoder := xml.NewDecoder(input.Reader)
+	decoder := xml.NewDecoder(bytes.NewReader(b))
 	if err := decoder.Decode(&packages); err != nil {
 		log.Errorf("Error parsing packages.config: %v", err)
 		return nil, err
 	}
+
+	finder := linefinder.NewOffsetFinder(b)
 
 	var result []*extractor.Package
 	for _, pkg := range packages.Packages {
@@ -153,11 +181,12 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			continue
 		}
 
+		line := finder.LineOfOffset(pkg.ByteOffset)
 		result = append(result, &extractor.Package{
 			Name:     pkg.ID,
 			Version:  pkg.Version,
 			PURLType: purl.TypeNuget,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, line),
 		})
 	}
 

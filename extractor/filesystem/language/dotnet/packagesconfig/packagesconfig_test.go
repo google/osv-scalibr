@@ -152,13 +152,13 @@ func TestExtract(t *testing.T) {
 					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 3),
 				},
 				{
 					Name:     "Microsoft.Net.Compilers",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 4),
 				},
 			},
 		},
@@ -166,6 +166,13 @@ func TestExtract(t *testing.T) {
 			Name: "packages.config file not xml",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",
+			},
+			WantErr: cmpopts.AnyError,
+		},
+		{
+			Name: "empty packages.config file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
 			},
 			WantErr: cmpopts.AnyError,
 		},
@@ -179,7 +186,7 @@ func TestExtract(t *testing.T) {
 					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/noversion"),
+					Location: extractor.LocationFromPathAndLine("testdata/noversion", 3),
 				},
 			},
 		},
@@ -193,7 +200,47 @@ func TestExtract(t *testing.T) {
 					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/nopackage"),
+					Location: extractor.LocationFromPathAndLine("testdata/nopackage", 3),
+				},
+			},
+		},
+		// Duplicate <package> XML elements are decoded sequentially by UnmarshalXML,
+		// so each element records its own stream byte offset and resolves to its
+		// respective line number.
+		{
+			Name: "duplicate packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicate",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 3),
+				},
+				{
+					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 4),
+				},
+			},
+		},
+		// xml.Decoder.InputOffset() inside UnmarshalXML captures the byte offset
+		// immediately after the opening <package ...> tag, so a multi-line start tag
+		// resolves to the closing line of the opening tag.
+		{
+			Name: "multi-line package tag",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiline",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/multiline", 6),
 				},
 			},
 		},
