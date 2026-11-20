@@ -20,7 +20,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -94,15 +93,13 @@ type Package struct {
 
 // Extract extracts packages from a Winget database file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	absPath, err := input.GetRealPath()
+	absPath, cleanup, err := input.OpenOSPath()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
+		return inventory.Inventory{}, fmt.Errorf("OpenOSPath(%q): %w", input.Path, err)
 	}
-	// The file got copied to a temporary dir, remove it at the end.
 	defer func() {
-		dir := filepath.Dir(absPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", absPath, err)
 		}
 	}()
 
