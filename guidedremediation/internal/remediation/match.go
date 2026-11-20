@@ -19,9 +19,9 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/options"
+	"github.com/google/osv-scalibr/internal/severity"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
