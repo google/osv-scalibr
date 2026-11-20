@@ -116,14 +116,15 @@ func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *
 		}
 	}
 
-	for jar := range jars {
+	var errs []error
+	for _, jar := range slices.Sorted(maps.Keys(jars)) {
 		err := enumerateReachabilityForJar(ctx, jar, input, inv, client)
 		if err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func getFullPackageName(i *extractor.Package) string {
@@ -138,7 +139,9 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	}
 	for i := range inv.Packages {
 		if inv.Packages[i].Location.PathOrEmpty() == jarPath {
-			allDeps = append(allDeps, inv.Packages[i])
+			if meta, ok := inv.Packages[i].Metadata.(*archivemeta.Metadata); ok && meta != nil {
+				allDeps = append(allDeps, inv.Packages[i])
+			}
 		}
 	}
 
@@ -311,33 +314,29 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 		log.Debug("Reachable", "dep", dep, "dynamic code", dynamicLoading, "dep injection", injection)
 	}
 
+	totalUnreachable := 0
+	totalUnmapped := 0
 	for _, dep := range allDeps {
 		name := getFullPackageName(dep)
-		if _, ok := reachableDeps[name]; !ok {
-			log.Debug("Not reachable", "dep", name)
-		}
-	}
-
-	log.Debug("finished analysis", "reachable", len(reachableDeps), "unreachable", len(allDeps)-len(reachableDeps), "all", len(allDeps))
-
-	totalUnreachable := 0
-	for i := range inv.Packages {
-		if inv.Packages[i].Location.PathOrEmpty() != jarPath {
+		if !classFinder.IsMapped(dep) {
+			log.Debug("Skipping reachability signal for unmapped package", "dep", name)
+			totalUnmapped++
 			continue
 		}
-		metadata := inv.Packages[i].Metadata.(*archivemeta.Metadata)
-		artifactName := fmt.Sprintf("%s:%s", metadata.GroupID, metadata.ArtifactID)
-		if _, exists := reachableDeps[artifactName]; !exists {
-			inv.Packages[i].ExploitabilitySignals = append(inv.Packages[i].ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+		if _, exists := reachableDeps[name]; !exists {
+			log.Debug("Not reachable", "dep", name)
+			dep.ExploitabilitySignals = append(dep.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
 				Plugin:          Name,
 				Justification:   vex.VulnerableCodeNotInExecutePath,
 				VulnIdentifiers: nil,
 				MatchesAllVulns: true,
 			})
-			log.Debugf("Added a unreachable signal to package '%s'", artifactName)
+			log.Debugf("Added a unreachable signal to package '%s'", name)
 			totalUnreachable++
 		}
 	}
+
+	log.Debug("finished analysis", "reachable", len(reachableDeps), "unreachable", totalUnreachable, "unmapped", totalUnmapped, "all", len(allDeps))
 
 	if totalUnreachable > 0 {
 		log.Infof("Java reachability enricher marked %d packages as unreachable", totalUnreachable)
