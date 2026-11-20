@@ -25,22 +25,27 @@ import (
 )
 
 // GitignorePattern is a list of patterns found inside a .gitignore file.
-type GitignorePattern gitignore.Matcher
+type GitignorePattern []gitignore.Pattern
 
-// EmptyGitignore returns an empty matcher that doesn't match on any pattern.
+// EmptyGitignore returns an empty pattern list that doesn't match on any pattern.
 func EmptyGitignore() GitignorePattern {
-	return gitignore.NewMatcher(nil)
+	return nil
 }
 
 // GitignoreMatch returns whether the specified file path should be ignored
 // according to the specified .gitignore patterns.
+// Patterns are evaluated according to git hierarchy: patterns from deeper (child)
+// directories take precedence over parent directories, and within each file the last
+// matching pattern takes precedence (including negation patterns prefixed with '!').
 func GitignoreMatch(gitignores []GitignorePattern, filePath []string, isDir bool) bool {
-	for _, p := range gitignores {
-		if p != nil && p.Match(filePath, isDir) {
-			return true
-		}
+	var allPatterns []gitignore.Pattern
+	for _, ps := range gitignores {
+		allPatterns = append(allPatterns, ps...)
 	}
-	return false
+	if len(allPatterns) == 0 {
+		return false
+	}
+	return gitignore.NewMatcher(allPatterns).Match(filePath, isDir)
 }
 
 // ParseDirForGitignore parses .gitignore patterns found in the
@@ -65,7 +70,7 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 			ps = append(ps, gitignore.ParsePattern(s, pathTokens))
 		}
 	}
-	return gitignore.NewMatcher(ps), nil
+	return ps, nil
 }
 
 // ParseParentGitignores parses all .gitignore patterns between the current dir
