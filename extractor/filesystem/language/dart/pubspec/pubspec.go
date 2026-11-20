@@ -17,6 +17,7 @@ package pubspec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -98,6 +99,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var parsedLockfile *pubspecLockfile
 	if err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null YAML value")
 	}
 
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))

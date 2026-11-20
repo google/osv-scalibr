@@ -18,6 +18,7 @@ package renvlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -75,6 +76,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
 
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
