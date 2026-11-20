@@ -452,6 +452,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	}
 
 	wc.fileAPI.currentPath = path
+	wc.fileAPI.currentEntry = d
 	wc.fileAPI.currentStatCalled = false
 
 	if d.Type().IsDir() {
@@ -553,6 +554,7 @@ func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
 type lazyFileAPI struct {
 	fs                scalibrfs.FS
 	currentPath       string
+	currentEntry      fs.DirEntry
 	currentFileInfo   fs.FileInfo
 	currentStatErr    error
 	currentStatCalled bool
@@ -564,7 +566,11 @@ func (api *lazyFileAPI) Path() string {
 func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
 	if !api.currentStatCalled {
 		api.currentStatCalled = true
-		api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
+		if api.currentEntry != nil && api.currentEntry.Type()&fs.ModeSymlink == 0 {
+			api.currentFileInfo, api.currentStatErr = api.currentEntry.Info()
+		} else {
+			api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
+		}
 	}
 	return api.currentFileInfo, api.currentStatErr
 }
@@ -645,7 +651,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 func (wc *walkContext) PrepareNewScan(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
-	wc.fileAPI.fs = fs
+	wc.fileAPI = &lazyFileAPI{fs: fs}
 	wc.inventory = inventory.Inventory{}
 	return nil
 }
@@ -772,8 +778,17 @@ func (wc *walkContext) printStatus() {
 // GetRealPath copies the file into an isolated temporary directory on the scanning host's
 // filesystem and returns its absolute path. It is up to the caller to delete the temporary
 // directory (filepath.Dir(realPath)) once they are done using it.
+//
+// Prefer OpenOSPath or OpenOSFile when an isolated copy is not always required.
 func (i *ScanInput) GetRealPath() (string, error) {
 	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
+}
+
+// OpenOSPath returns a host filesystem path for the scanned file along with a cleanup function.
+// On unconfined real filesystems (os.DirFS) it returns the in-place path without copying; on
+// confined or virtual filesystems it copies the file into an isolated temporary directory.
+func (i *ScanInput) OpenOSPath() (string, func() error, error) {
+	return scalibrfs.OpenOSPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // OpenOSFile returns an *os.File handle for the scanned file along with a cleanup function.

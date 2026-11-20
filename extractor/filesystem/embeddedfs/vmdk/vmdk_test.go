@@ -23,14 +23,20 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -296,5 +302,120 @@ func TestExtractSymlinkEscapeRejected(t *testing.T) {
 	}
 	if _, err := extractor.Extract(t.Context(), input); err == nil {
 		t.Errorf("Extract(disk.vmdk) succeeded through escaping symlink, want error")
+	}
+}
+
+type pemTestExtractor struct {
+	statChecks int
+	statErr    error
+}
+
+func (*pemTestExtractor) Name() string                       { return "test/vmdk-pem" }
+func (*pemTestExtractor) Version() int                       { return 0 }
+func (*pemTestExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *pemTestExtractor) FileRequired(api filesystem.FileAPI) bool {
+	if !strings.HasSuffix(api.Path(), ".pem") {
+		return false
+	}
+	e.statChecks++
+	info, err := api.Stat()
+	if err != nil {
+		e.statErr = err
+		return false
+	}
+	return !info.IsDir()
+}
+func (*pemTestExtractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	data, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+	if !bytes.HasPrefix(data, []byte("-----BEGIN")) {
+		return inventory.Inventory{}, fmt.Errorf("%s: unexpected PEM prefix", input.Path)
+	}
+	return inventory.Inventory{
+		Packages: []*extractor.Package{{
+			Name:     filepath.Base(input.Path),
+			Location: extractor.LocationFromPath(input.Path),
+		}},
+	}, nil
+}
+
+func TestExtractValidVMDK_FilesystemRunEndToEnd(t *testing.T) {
+	scanRoot := t.TempDir()
+	diskDir := filepath.Join(scanRoot, "vms")
+	if err := os.MkdirAll(diskDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%q): %v", diskDir, err)
+	}
+	rawVMDK, err := os.ReadFile(filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.vmdk"))
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(diskDir, "disk.vmdk"), rawVMDK, 0o600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	vmdkEx, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
+	pemEx := &pemTestExtractor{}
+
+	scanRoots := []*scalibrfs.ScanRoot{fakefs.RealFSScanRoot(t, scanRoot)}
+
+	inv, statuses, err := filesystem.Run(t.Context(), &filesystem.Config{
+		Stats:      stats.NoopCollector{},
+		ScanRoots:  scanRoots,
+		Extractors: []filesystem.Extractor{vmdkEx, pemEx},
+	})
+	if err != nil {
+		t.Fatalf("filesystem.Run: %v", err)
+	}
+	t.Cleanup(func() {
+		// Verify EmbeddedDirFS closed its DirFS handles cleanly so every extracted
+		// partition temp directory can be removed immediately.
+		for _, efs := range inv.EmbeddedFSs {
+			for _, tmpPath := range efs.TempPaths {
+				// On Windows, common.GetDiskPartitions retains go-diskfs's open *os.File
+				// handle on the temporary .raw disk image, whereas EmbeddedDirFS.Close()
+				// releases the extracted partition directory handles checked below.
+				if runtime.GOOS == "windows" && strings.HasSuffix(tmpPath, ".raw") {
+					_ = os.RemoveAll(tmpPath)
+					continue
+				}
+				if rmErr := os.RemoveAll(tmpPath); rmErr != nil {
+					t.Errorf("os.RemoveAll(%q) failed (handle still open?): %v", tmpPath, rmErr)
+				}
+			}
+		}
+	})
+	for _, st := range statuses {
+		if st.Status.Status != plugin.ScanStatusSucceeded {
+			t.Errorf("plugin %q status = %v, want SUCCEEDED", st.Name, st.Status)
+		}
+	}
+
+	if len(inv.EmbeddedFSs) != 4 {
+		t.Fatalf("len(EmbeddedFSs) = %d, want 4 partitions (ext4, exFAT, FAT32, NTFS)", len(inv.EmbeddedFSs))
+	}
+
+	if pemEx.statErr != nil {
+		t.Errorf("pemTestExtractor api.Stat() error: %v", pemEx.statErr)
+	}
+	if pemEx.statChecks < 4 {
+		t.Errorf("pemTestExtractor statChecks = %d, want >= 4", pemEx.statChecks)
+	}
+
+	// Every one of the 4 VM partitions must record temp paths and yield at least one verified PEM file.
+	for _, efs := range inv.EmbeddedFSs {
+		if len(efs.TempPaths) == 0 {
+			t.Errorf("EmbeddedFS(%q) TempPaths = empty, want >= 1 temp path", efs.Path)
+		}
+		prefix := efs.Path + ":"
+		if !slices.ContainsFunc(inv.Packages, func(pkg *extractor.Package) bool {
+			return strings.HasPrefix(pkg.Location.PathOrEmpty(), prefix)
+		}) {
+			t.Errorf("filesystem.Run() packages missing PEM from partition %q", efs.Path)
+		}
 	}
 }
