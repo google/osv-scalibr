@@ -64,18 +64,11 @@ func TestExtract(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "could not parse go.work"},
 		},
 		{
-			Name: "no_sum_file_emits_only_stdlib",
+			Name: "no_sum_file_emits_no_packages_by_default",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.work",
 			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "stdlib",
-					Version:  "1.21",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/empty.work", 1),
-				},
-			},
+			WantPackages: nil,
 		},
 		{
 			Name: "two_modules_with_sum",
@@ -83,12 +76,6 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/two-modules.work",
 			},
 			WantPackages: []*extractor.Package{
-				{
-					Name:     "stdlib",
-					Version:  "1.21",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/two-modules.work", 1),
-				},
 				{
 					Name:     "github.com/davecgh/go-spew",
 					Version:  "1.1.1",
@@ -104,36 +91,6 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "toolchain_version_takes_priority",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/toolchain.work",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "stdlib",
-					Version:  "1.23.6",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain.work", 3),
-				},
-			},
-		},
-		{
-			// toolchain default / local are special non-versioned values; the go
-			// directive version should be used instead.
-			Name: "toolchain_default_falls_back_to_go_directive",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/toolchain-default.work",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "stdlib",
-					Version:  "1.22",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain-default.work", 1),
-				},
-			},
-		},
-		{
 			// replace directives are applied as mutations to packages found in
 			// go.work.sum. The old entry is replaced with the new name/version.
 			// Local path replacements (no version on the new side) result in a
@@ -143,12 +100,6 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/replace.work",
 			},
 			WantPackages: []*extractor.Package{
-				{
-					Name:     "stdlib",
-					Version:  "1.22",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 1),
-				},
 				// example.com/bad/thing v1.4.5 is replaced by
 				// example.com/good/thing v1.4.5 (specific version replace).
 				{
@@ -199,6 +150,110 @@ func TestExtract(t *testing.T) {
 			wantInv := inventory.Inventory{Packages: tt.WantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
+			}
+		})
+	}
+}
+
+func TestExtract_WithIncludeStdlibConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		inputPath    string
+		wantPackages []*extractor.Package
+	}{
+		{
+			name:      "no_sum_file_emits_only_stdlib",
+			inputPath: "testdata/empty.work",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "stdlib",
+					Version:  "1.21",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/empty.work", 1),
+				},
+			},
+		},
+		{
+			name:      "two_modules_with_sum_includes_stdlib",
+			inputPath: "testdata/two-modules.work",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "stdlib",
+					Version:  "1.21",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-modules.work", 1),
+				},
+				{
+					Name:     "github.com/davecgh/go-spew",
+					Version:  "1.1.1",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-modules.work.sum", 1),
+				},
+				{
+					Name:     "gopkg.in/yaml.v2",
+					Version:  "2.4.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-modules.work.sum", 3),
+				},
+			},
+		},
+		{
+			name:      "toolchain_version_takes_priority",
+			inputPath: "testdata/toolchain.work",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "stdlib",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain.work", 3),
+				},
+			},
+		},
+		{
+			// toolchain default / local are special non-versioned values; the go
+			// directive version should be used instead.
+			name:      "toolchain_default_falls_back_to_go_directive",
+			inputPath: "testdata/toolchain-default.work",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "stdlib",
+					Version:  "1.22",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain-default.work", 1),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoWork{
+						GoWork: &cpb.GoWorkConfig{
+							IncludeStdlib: true,
+						},
+					}},
+				},
+			}
+			e, err := gowork.New(cfg)
+			if err != nil {
+				t.Fatalf("gowork.New(%v) error: %v", cfg, err)
+			}
+
+			scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+				Path: tt.inputPath,
+			})
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := e.Extract(t.Context(), &scanInput)
+			if err != nil {
+				t.Fatalf("%s.Extract(%q) error: %v", e.Name(), scanInput.Path, err)
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), scanInput.Path, diff)
 			}
 		})
 	}
