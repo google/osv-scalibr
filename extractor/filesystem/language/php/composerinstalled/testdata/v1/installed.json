@@ -1,0 +1,9 @@
+[
+  {
+    "name": "guzzlehttp/guzzle",
+    "version": "6.5.8",
+    "dist": {
+      "reference": "a52f0440530b54fa079ce76e8c5d196a42cad981"
+    }
+  }
+]
