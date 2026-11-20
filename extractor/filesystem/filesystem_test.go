@@ -1039,6 +1039,20 @@ func TestRunFSGitignore(t *testing.T) {
 			wantInodeCount: 2,
 		},
 		{
+			desc: "Child_negation_overrides_parent_gitignore_from_subdir_root",
+			mapFS: mapFS{
+				".":                   nil,
+				"dir2":                nil,
+				"dir2/sub":            nil,
+				"dir2/sub/file2.txt":  []byte("Content 2"),
+				"dir2/sub/.gitignore": []byte("!file2.txt"),
+				"dir2/.gitignore":     []byte("*.txt"),
+			},
+			pathToExtract:  "dir2/sub",
+			wantPkg2:       true,
+			wantInodeCount: 3,
+		},
+		{
 			desc: "Skip_based_on_child_gitignore",
 			mapFS: mapFS{
 				".":               nil,
