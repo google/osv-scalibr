@@ -1335,7 +1335,7 @@ func TestInitializeChainLayers(t *testing.T) {
 				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected error: %v", tc.v1Layers, tc.history, tc.maxSymlinkDepth, err)
 			}
 
-			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree"), cmpopts.IgnoreFields(Layer{}, "fileNodeTree")); diff != "" {
+			if diff := cmp.Diff(tc.want, gotChainLayers, cmp.AllowUnexported(chainLayer{}, Layer{}, fakev1layer.FakeV1Layer{}), cmpopts.IgnoreFields(chainLayer{}, "fileNodeTree", "opaqueDirs"), cmpopts.IgnoreFields(Layer{}, "fileNodeTree")); diff != "" {
 				t.Fatalf("initializeChainLayers(%v, %v, %v) returned an unexpected diff (-want +got): %v", tc.v1Layers, tc.history, tc.maxSymlinkDepth, diff)
 			}
 		})
@@ -1659,4 +1659,178 @@ func TestFromRemoteName(t *testing.T) {
 			}, nil)
 		})
 	}
+}
+
+func TestOpaqueWhiteoutHidesLowerLayerFiles(t *testing.T) {
+	makeLayer0Entries := func() []*tarEntry {
+		return []*tarEntry{
+			{
+				Header: &tar.Header{
+					Name: "app/other.txt",
+					Mode: 0644,
+					Size: int64(len("other")),
+				},
+				Data: bytes.NewBufferString("other"),
+			},
+			{
+				Header: &tar.Header{
+					Name: "app/node_modules/lodash/package.json",
+					Mode: 0644,
+					Size: int64(len("lodash")),
+				},
+				Data: bytes.NewBufferString("lodash"),
+			},
+			{
+				Header: &tar.Header{
+					Name: "app/node_modules/express/package.json",
+					Mode: 0644,
+					Size: int64(len("express")),
+				},
+				Data: bytes.NewBufferString("express"),
+			},
+		}
+	}
+
+	// Layer 1 has an opaque whiteout for node_modules and adds flask.
+	// We test two orders:
+	// Order A: .wh..wh..opq comes before flask in tar
+	// Order B: flask comes before .wh..wh..opq in tar
+	tests := []struct {
+		name              string
+		makeLayer1Entries func() []*tarEntry
+	}{
+		{
+			name: "opaque_marker_first",
+			makeLayer1Entries: func() []*tarEntry {
+				return []*tarEntry{
+					{
+						Header: &tar.Header{
+							Name: "app/node_modules/.wh..wh..opq",
+							Mode: 0644,
+							Size: 0,
+						},
+					},
+					{
+						Header: &tar.Header{
+							Name: "app/node_modules/flask/package.json",
+							Mode: 0644,
+							Size: int64(len("flask")),
+						},
+						Data: bytes.NewBufferString("flask"),
+					},
+				}
+			},
+		},
+		{
+			name: "opaque_marker_last",
+			makeLayer1Entries: func() []*tarEntry {
+				return []*tarEntry{
+					{
+						Header: &tar.Header{
+							Name: "app/node_modules/flask/package.json",
+							Mode: 0644,
+							Size: int64(len("flask")),
+						},
+						Data: bytes.NewBufferString("flask"),
+					},
+					{
+						Header: &tar.Header{
+							Name: "app/node_modules/.wh..wh..opq",
+							Mode: 0644,
+							Size: 0,
+						},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			img := constructMultiLayerImageWithTarEntries(t, [][]*tarEntry{makeLayer0Entries(), tc.makeLayer1Entries()})
+			gotImg, err := FromV1Image(img, DefaultConfig())
+			if err != nil {
+				t.Fatalf("FromV1Image() unexpected error: %v", err)
+			}
+			t.Cleanup(func() {
+				_ = gotImg.CleanUp()
+			})
+
+			fsys := gotImg.FS()
+
+			// 1. /app/other.txt should exist and have "other"
+			data, err := fs.ReadFile(fsys, "app/other.txt")
+			if err != nil {
+				t.Errorf("fs.ReadFile(app/other.txt) unexpected error: %v", err)
+			} else if string(data) != "other" {
+				t.Errorf("app/other.txt content = %q, want %q", string(data), "other")
+			}
+
+			// 2. /app/node_modules/flask/package.json should exist and have "flask"
+			data, err = fs.ReadFile(fsys, "app/node_modules/flask/package.json")
+			if err != nil {
+				t.Errorf("fs.ReadFile(app/node_modules/flask/package.json) unexpected error: %v", err)
+			} else if string(data) != "flask" {
+				t.Errorf("app/node_modules/flask/package.json content = %q, want %q", string(data), "flask")
+			}
+
+			// 3. /app/node_modules/lodash/package.json should NOT exist (hidden by opaque whiteout)
+			if _, err := fs.Stat(fsys, "app/node_modules/lodash/package.json"); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("fs.Stat(app/node_modules/lodash/package.json) err = %v, want ErrNotExist", err)
+			}
+
+			// 4. /app/node_modules/express/package.json should NOT exist (hidden by opaque whiteout)
+			if _, err := fs.Stat(fsys, "app/node_modules/express/package.json"); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("fs.Stat(app/node_modules/express/package.json) err = %v, want ErrNotExist", err)
+			}
+
+			// 5. ReadDir on /app/node_modules should only contain "flask"
+			entries, err := fs.ReadDir(fsys, "app/node_modules")
+			if err != nil {
+				t.Fatalf("fs.ReadDir(app/node_modules) unexpected error: %v", err)
+			}
+			var entryNames []string
+			for _, e := range entries {
+				entryNames = append(entryNames, e.Name())
+			}
+			if len(entryNames) != 1 || entryNames[0] != "flask" {
+				t.Errorf("fs.ReadDir(app/node_modules) = %v, want %v", entryNames, []string{"flask"})
+			}
+		})
+	}
+}
+
+func constructMultiLayerImageWithTarEntries(t *testing.T, layersTarEntries [][]*tarEntry) v1.Image {
+	t.Helper()
+
+	var layers []v1.Layer
+	for _, tarEntries := range layersTarEntries {
+		var buf bytes.Buffer
+		w := tar.NewWriter(&buf)
+		for _, entry := range tarEntries {
+			if err := w.WriteHeader(entry.Header); err != nil {
+				t.Fatalf("couldn't write header for %s: %v", entry.Header.Name, err)
+			}
+			if entry.Data != nil {
+				if _, err := io.Copy(w, entry.Data); err != nil {
+					t.Fatalf("writing content for %s: %v", entry.Header.Name, err)
+				}
+			}
+		}
+		w.Close()
+
+		layer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewBuffer(buf.Bytes())), nil
+		})
+		if err != nil {
+			t.Fatalf("unable to create layer: %v", err)
+		}
+		layers = append(layers, layer)
+	}
+
+	image, err := mutate.AppendLayers(empty.Image, layers...)
+	if err != nil {
+		t.Fatalf("unable to append layers to image: %v", err)
+	}
+	return image
 }
