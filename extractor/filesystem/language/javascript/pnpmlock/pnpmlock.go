@@ -113,6 +113,11 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 
 		name, version, _ := strings.Cut(dependencyPath, "@")
 
+		// v9 lockfiles don't track the version of file dependencies, so just bail
+		if strings.HasPrefix(version, "file:") {
+			return "", "", nil
+		}
+
 		if isScoped {
 			name = "@" + name
 		}

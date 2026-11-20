@@ -1369,8 +1369,10 @@ type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Enables extracting the module version from the Go binary content.
 	VersionFromContent bool `protobuf:"varint,1,opt,name=version_from_content,json=versionFromContent,proto3" json:"version_from_content,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Enables extracting the module dependency relations from the Go binary.
+	ExtractDependencyRelations bool `protobuf:"varint,2,opt,name=extract_dependency_relations,json=extractDependencyRelations,proto3" json:"extract_dependency_relations,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *GoBinaryConfig) Reset() {
@@ -1406,6 +1408,13 @@ func (*GoBinaryConfig) Descriptor() ([]byte, []int) {
 func (x *GoBinaryConfig) GetVersionFromContent() bool {
 	if x != nil {
 		return x.VersionFromContent
+	}
+	return false
+}
+
+func (x *GoBinaryConfig) GetExtractDependencyRelations() bool {
+	if x != nil {
+		return x.ExtractDependencyRelations
 	}
 	return false
 }
@@ -4984,9 +4993,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\"\n" +
 	"\n" +
 	"keep_going\x18\x02 \x01(\bH\x00R\tkeepGoing\x88\x01\x01B\r\n" +
-	"\v_keep_going\"B\n" +
+	"\v_keep_going\"\x84\x01\n" +
 	"\x0eGoBinaryConfig\x120\n" +
-	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
+	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\x12@\n" +
+	"\x1cextract_dependency_relations\x18\x02 \x01(\bR\x1aextractDependencyRelations\"D\n" +
 	"\x11GovulncheckConfig\x12/\n" +
 	"\x14offline_vuln_db_path\x18\x01 \x01(\tR\x11offlineVulnDbPath\"z\n" +
 	"\rArchiveConfig\x12-\n" +
