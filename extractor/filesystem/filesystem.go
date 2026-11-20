@@ -277,9 +277,13 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 	}
 	dirsToSkip = toSlashPaths(dirsToSkip)
 
+	collector := config.Stats
+	if collector == nil {
+		collector = stats.NoopCollector{}
+	}
 	return &walkContext{
 		ctx:               ctx,
-		stats:             config.Stats,
+		stats:             collector,
 		extractors:        config.Extractors,
 		pathsToExtract:    pathsToExtract,
 		ignoreSubDirs:     config.IgnoreSubDirs,
