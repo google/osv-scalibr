@@ -261,9 +261,9 @@ func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, in
 	//  - dedupe dependencies and dependency management
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
-	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, e.MavenClient, groupID, artifactID, version)
-	})
+	if err := mavenutil.FinalizeDependencies(ctx, e.MavenClient, &project); err != nil {
+		return inventory.Inventory{}, err
+	}
 
 	if registries := e.MavenClient.GetRegistries(); len(registries) > 0 {
 		clientRegs := make([]resolution.Registry, len(registries))

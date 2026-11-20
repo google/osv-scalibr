@@ -17,6 +17,7 @@ package mavenutil
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -237,6 +238,25 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 
 		return result.DependencyManagement, nil
 	})
+}
+
+// FinalizeDependencies dedupes the project's dependencies, imports dependency management from
+// remote BOMs, fills in managed versions, and checks that every dependency has a version.
+func FinalizeDependencies(ctx context.Context, client *datasource.MavenRegistryAPIClient, project *maven.Project) error {
+	var errs []error
+	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
+		dm, err := GetDependencyManagement(ctx, client, groupID, artifactID, version)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to import BOM %s:%s:%s: %w", groupID, artifactID, version, err))
+		}
+		return dm, err
+	})
+	for _, d := range project.Dependencies {
+		if d.Version == "" {
+			errs = append(errs, fmt.Errorf("'dependencies.dependency.version' for %s:%s is missing", d.Name(), cmp.Or(string(d.Type), "jar")))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // CompareVersions compares two Maven semver versions with special behaviour for specific packages,

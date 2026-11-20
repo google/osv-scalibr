@@ -56,12 +56,6 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 	bom := cyclonedx.NewBOM()
 	bom.Metadata = &cyclonedx.Metadata{
 		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),
-		Component: &cyclonedx.Component{
-			Name:    c.ComponentName,
-			Version: c.ComponentVersion,
-			Type:    cyclonedx.ComponentType(c.ComponentType),
-			BOMRef:  uuid.New().String(),
-		},
 		Tools: &cyclonedx.ToolsChoice{
 			Components: &[]cyclonedx.Component{
 				{
@@ -76,6 +70,20 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 				},
 			},
 		},
+	}
+	// the component is optional, but requires a name and type when present
+	if c.ComponentName != "" {
+		componentType := cyclonedx.ComponentType(c.ComponentType)
+		if componentType == "" {
+			componentType = cyclonedx.ComponentTypeApplication
+		}
+
+		bom.Metadata.Component = &cyclonedx.Component{
+			Name:    c.ComponentName,
+			Version: c.ComponentVersion,
+			Type:    componentType,
+			BOMRef:  uuid.New().String(),
+		}
 	}
 	if len(c.Authors) > 0 {
 		authors := make([]cyclonedx.OrganizationalContact, 0, len(c.Authors))

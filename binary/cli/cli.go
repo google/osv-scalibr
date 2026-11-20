@@ -477,11 +477,16 @@ func (f *Flags) GetSPDXConfig() convspdx.Config {
 
 // GetCDXConfig creates a CDXConfig struct based on the CLI flags.
 func (f *Flags) GetCDXConfig() converter.CDXConfig {
+	var authors []string
+	if f.CDXAuthors != "" {
+		authors = strings.Split(f.CDXAuthors, ",")
+	}
+
 	return converter.CDXConfig{
 		ComponentName:    f.CDXComponentName,
 		ComponentType:    f.CDXComponentType,
 		ComponentVersion: f.CDXComponentVersion,
-		Authors:          strings.Split(f.CDXAuthors, ","),
+		Authors:          authors,
 	}
 }
 

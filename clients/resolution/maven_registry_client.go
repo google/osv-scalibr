@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/resolve/version"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	"github.com/google/osv-scalibr/log"
 )
 
 // MavenRegistryClient is a client to fetch data from Maven registry.
@@ -155,7 +156,8 @@ func (c *MavenRegistryClient) fetchRequirements(ctx context.Context, vk resolve.
 
 	// Only merge default profiles by passing empty JDK and OS information.
 	if err := proj.MergeProfiles("", maven.ActivationOS{}); err != nil {
-		return nil, err
+		log.Warnf("The POM for %s:%s is invalid, transitive dependencies (if any) will not be available: %v", vk.Name, vk.Version, err)
+		return nil, nil
 	}
 
 	// We need to merge parents for potential dependencies in parents.
@@ -166,11 +168,21 @@ func (c *MavenRegistryClient) fetchRequirements(ctx context.Context, vk resolve.
 		AllowLocal:         false,
 		InitialParentIndex: 1,
 	}); err != nil {
-		return nil, err
+		if ctx.Err() != nil {
+			return nil, err
+		}
+		log.Warnf("The POM for %s:%s is invalid, transitive dependencies (if any) will not be available: %v", vk.Name, vk.Version, err)
+		return nil, nil
 	}
-	proj.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, c.api, groupID, artifactID, version)
-	})
+	if err := mavenutil.FinalizeDependencies(ctx, c.api, &proj); err != nil {
+		if ctx.Err() != nil {
+			return nil, err
+		}
+		// Maven rejects an invalid dependency POM and resolves none of its
+		// transitive dependencies.
+		log.Warnf("The POM for %s:%s is invalid, transitive dependencies (if any) will not be available: %v", vk.Name, vk.Version, err)
+		return nil, nil
+	}
 
 	reqs := make([]resolve.RequirementVersion, 0, len(proj.Dependencies))
 	for _, d := range proj.Dependencies {
