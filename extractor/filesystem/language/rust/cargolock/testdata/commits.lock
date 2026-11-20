@@ -1,0 +1,14 @@
+[[package]]
+name = "regex"
+version = "1.5.4"
+source = "git+https://github.com/rust-lang/regex?rev=ae70b41d4f46641dbc45c7a4f87954aea356283e#ae70b41d4f46641dbc45c7a4f87954aea356283e"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.25"
+source = "git+https://github.com/rust-lang/regex?rev=ae70b41d4f46641dbc45c7a4f87954aea356283e#ae70b41d4f46641dbc45c7a4f87954aea356283e"
