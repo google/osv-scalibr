@@ -31,6 +31,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -116,7 +117,7 @@ func TestAnnotate(t *testing.T) {
 		{
 			desc: "pkgs_found_in_non_cos_filesystem",
 			input: &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(t.TempDir()),
+				ScanRoot: fakefs.RealFSScanRoot(t, t.TempDir()),
 			},
 			packages: []*extractor.Package{
 				{
@@ -237,5 +238,5 @@ func mustCOSFS(t *testing.T) *scalibrfs.ScanRoot {
 		filepath.Join(dir, cosPackageInfoFile): "",
 	}
 	mustWriteFiles(t, files)
-	return scalibrfs.RealFSScanRoot(dir)
+	return fakefs.RealFSScanRoot(t, dir)
 }

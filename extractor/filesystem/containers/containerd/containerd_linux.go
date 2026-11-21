@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -131,6 +132,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	fsys := input.FS
 	if fsys == nil && input.Root != "" {
 		fsys = scalibrfs.DirFS(input.Root)
+		if c, ok := fsys.(io.Closer); ok {
+			defer func() { _ = c.Close() }()
+		}
 	}
 	if fsys != nil {
 		if err := fileSizeCheck(fsys, filepath.ToSlash(input.Path), e.maxMetaDBFileSize); err != nil {

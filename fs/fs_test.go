@@ -83,6 +83,11 @@ func TestSub(t *testing.T) {
 
 func TestSubEmptyDir(t *testing.T) {
 	base := scalibrfs.DirFS(t.TempDir())
+	t.Cleanup(func() {
+		if c, ok := base.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	for _, dir := range []string{"", "."} {
 		if got := scalibrfs.Sub(base, dir); got != base {
 			t.Errorf("Sub(base, %q) returned a new FS, want the original", dir)
@@ -354,6 +359,23 @@ func TestDirFS_Symlinks(t *testing.T) {
 		if _, err := fs.ReadFile(fsys, missingPath); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("ReadFile(%q) = %v, want fs.ErrNotExist", missingPath, err)
 		}
+	}
+}
+
+// TestOSRootPathEscapesError guards the unexported os.errPathEscapes error
+// text ("path escapes from parent") matched by resolveInRoot so any upstream
+// Go stdlib change to src/os/root.go fails unit tests immediately on all OSes.
+func TestOSRootPathEscapesError(t *testing.T) {
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatalf("os.OpenRoot: %v", err)
+	}
+	defer root.Close()
+
+	_, err = root.Open("../outside")
+	var pathErr *fs.PathError
+	if !errors.As(err, &pathErr) || pathErr.Err == nil || pathErr.Err.Error() != "path escapes from parent" {
+		t.Fatalf("root.Open(../outside) err = %v, want *fs.PathError with Err %q", err, "path escapes from parent")
 	}
 }
 

@@ -293,3 +293,29 @@ func TestCreateSymlinkEscapeFixtureRejectedByOSRoot(t *testing.T) {
 		t.Errorf("root.Open(nested/escape.txt) error = %v, want path escape error", err)
 	}
 }
+
+func TestDirFSAndRealFSScanRoot(t *testing.T) {
+	dir := t.TempDir()
+	mustWriteFile(t, filepath.Join(dir, "file.txt"), "hello")
+
+	fsys := DirFS(t, dir)
+	got, err := fs.ReadFile(fsys, "file.txt")
+	if err != nil {
+		t.Fatalf("fs.ReadFile(DirFS): %v", err)
+	}
+	if string(got) != "hello" {
+		t.Errorf("fs.ReadFile(DirFS) = %q, want %q", got, "hello")
+	}
+
+	root := RealFSScanRoot(t, dir)
+	if root.Path != dir {
+		t.Errorf("RealFSScanRoot().Path = %q, want %q", root.Path, dir)
+	}
+	gotRoot, err := fs.ReadFile(root.FS, "file.txt")
+	if err != nil {
+		t.Fatalf("fs.ReadFile(RealFSScanRoot.FS): %v", err)
+	}
+	if string(gotRoot) != "hello" {
+		t.Errorf("fs.ReadFile(RealFSScanRoot.FS) = %q, want %q", gotRoot, "hello")
+	}
+}

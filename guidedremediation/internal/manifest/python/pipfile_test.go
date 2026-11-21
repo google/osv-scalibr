@@ -22,14 +22,13 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestReadPipfile(t *testing.T) {
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/pipfile"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata/pipfile"))
 	pipfileRW, _ := GetPipfileReadWriter()
 	got, err := pipfileRW.Read("Pipfile", fsys)
 	if err != nil {
@@ -161,7 +160,7 @@ func TestReadPipfile(t *testing.T) {
 
 func TestWritePipfile(t *testing.T) {
 	rw, _ := GetPipfileReadWriter()
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/pipfile"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata/pipfile"))
 	manif, err := rw.Read("Pipfile", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)

@@ -84,6 +84,46 @@ func TestFromPURL(t *testing.T) {
 			want:    "Wolfi",
 		},
 		{
+			desc:    "MinimOS with distro (should ignore distro)",
+			purlStr: "pkg:apk/minimos/curl@8.0.0-r0?arch=x86_64&distro=minimos-20241031",
+			want:    "MinimOS",
+		},
+		{
+			desc:    "MinimOS without distro",
+			purlStr: "pkg:apk/minimos/curl@8.0.0-r0",
+			want:    "MinimOS",
+		},
+		{
+			desc:    "CleanStart",
+			purlStr: "pkg:apk/cleanstart/curl@8.0.0-r0?distro=1.0",
+			want:    "CleanStart",
+		},
+		{
+			desc:    "CleanStart (clnstrt namespace)",
+			purlStr: "pkg:apk/clnstrt/curl@8.0.0-r0",
+			want:    "CleanStart",
+		},
+		{
+			desc:    "Alpaquita with version distro",
+			purlStr: "pkg:apk/alpaquita/curl@8.0.0-r0?distro=23",
+			want:    "Alpaquita:23",
+		},
+		{
+			desc:    "Alpaquita with prefixed distro",
+			purlStr: "pkg:apk/alpaquita/curl@8.0.0-r0?distro=alpaquita-23",
+			want:    "Alpaquita:23",
+		},
+		{
+			desc:    "Alpaquita without distro",
+			purlStr: "pkg:apk/alpaquita/curl@8.0.0-r0",
+			want:    "Alpaquita",
+		},
+		{
+			desc:    "BellSoft Hardened Containers with prefixed distro",
+			purlStr: "pkg:apk/bellsoft-hardened-containers/curl@8.0.0-r0?distro=bellsoft-hardened-containers-23",
+			want:    "BellSoft Hardened Containers:23",
+		},
+		{
 			desc:    "Debian with version",
 			purlStr: "pkg:deb/debian/nginx@1.18.0?distro=11",
 			want:    "Debian:11",

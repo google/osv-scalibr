@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -261,7 +260,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
+				FS: fakefs.DirFS(t, d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
 			got, err := e.Extract(t.Context(), input)

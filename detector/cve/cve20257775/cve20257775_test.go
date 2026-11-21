@@ -21,7 +21,6 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -31,7 +30,7 @@ import (
 
 func TestScan(t *testing.T) {
 	dir := fakefs.CopyTestData(t, "testdata")
-	fsys := scalibrfs.DirFS(dir)
+	fsys := fakefs.DirFS(t, dir)
 
 	pkgs := []*extractor.Package{
 		{
@@ -94,7 +93,7 @@ func runScan(t *testing.T, dir string, pkgs []*extractor.Package) inventory.Find
 	if err != nil {
 		t.Fatalf("cve20257775.New() returned error: %v", err)
 	}
-	findings, err := detector.Scan(t.Context(), scalibrfs.RealFSScanRoot(dir), px)
+	findings, err := detector.Scan(t.Context(), fakefs.RealFSScanRoot(t, dir), px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)
 	}

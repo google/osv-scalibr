@@ -25,12 +25,40 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestDdpPat = "ddp_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw"
 
 const validatorTestDdoPat = "ddo_4nkT2HnlnbPpGbW5RVE7DsIyfMJ3bN3YeqZT"
+
+func TestAcceptUserTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		denopat.NewUserTokenValidator(),
+		velestest.WithTrueNegatives(denopat.DenoUserPAT{
+			Pat: "ddp_invalid000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[denopat.DenoUserPAT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
+func TestAcceptOrgTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		denopat.NewOrgTokenValidator(),
+		velestest.WithTrueNegatives(denopat.DenoOrgPAT{
+			Pat: "ddo_invalid000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[denopat.DenoOrgPAT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -207,69 +235,6 @@ func TestOrgTokenValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-func TestUserTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := denopat.NewUserTokenValidator()
-	validator.HTTPC = client
-
-	// Create a test pat
-	pat := denopat.DenoUserPAT{Pat: validatorTestDdpPat}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, pat)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
-func TestOrgTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := denopat.NewOrgTokenValidator()
-	validator.HTTPC = client
-
-	// Create a test pat
-	pat := denopat.DenoOrgPAT{Pat: validatorTestDdoPat}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, pat)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

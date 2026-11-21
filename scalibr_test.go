@@ -1336,16 +1336,39 @@ func (c *closeTrackingFS) Close() error {
 }
 
 func TestScan_ClosesScanRoots(t *testing.T) {
-	dir := t.TempDir()
-	tracked := &closeTrackingFS{FS: scalibrfs.DirFS(dir)}
-	cfg := &scalibr.ScanConfig{
-		ScanRoots: []*scalibrfs.ScanRoot{{FS: tracked, Path: dir}},
-	}
-	res := scalibr.New().Scan(t.Context(), cfg)
-	if res.Status.Status != plugin.ScanStatusSucceeded {
-		t.Fatalf("Scan failed: %s", res.Status.FailureReason)
-	}
-	if tracked.closeCount != 1 {
-		t.Errorf("Scan closeCount = %d, want 1", tracked.closeCount)
-	}
+	t.Run("success", func(t *testing.T) {
+		dir := t.TempDir()
+		tracked := &closeTrackingFS{FS: scalibrfs.DirFS(dir)}
+		cfg := &scalibr.ScanConfig{
+			ScanRoots: []*scalibrfs.ScanRoot{{FS: tracked, Path: dir}},
+		}
+		res := scalibr.New().Scan(t.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusSucceeded {
+			t.Fatalf("Scan failed: %s", res.Status.FailureReason)
+		}
+		if tracked.closeCount != 1 {
+			t.Errorf("Scan closeCount = %d, want 1", tracked.closeCount)
+		}
+	})
+
+	t.Run("early_validation_error", func(t *testing.T) {
+		dir1 := t.TempDir()
+		dir2 := t.TempDir()
+		tracked1 := &closeTrackingFS{FS: scalibrfs.DirFS(dir1)}
+		tracked2 := &closeTrackingFS{FS: scalibrfs.DirFS(dir2)}
+		cfg := &scalibr.ScanConfig{
+			ScanRoots: []*scalibrfs.ScanRoot{
+				{FS: tracked1, Path: dir1},
+				{FS: tracked2, Path: dir2},
+			},
+			PathsToExtract: []string{"file.txt"},
+		}
+		res := scalibr.New().Scan(t.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusFailed {
+			t.Fatalf("Scan status = %v, want %v", res.Status.Status, plugin.ScanStatusFailed)
+		}
+		if tracked1.closeCount != 1 || tracked2.closeCount != 1 {
+			t.Errorf("Scan closeCounts = (%d, %d), want (1, 1)", tracked1.closeCount, tracked2.closeCount)
+		}
+	})
 }

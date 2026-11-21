@@ -1146,7 +1146,7 @@ func setupMapFS(t *testing.T, mapFS mapFS) scalibrfs.FS {
 			}
 		}
 	}
-	return scalibrfs.DirFS(root)
+	return fakefs.DirFS(t, root)
 }
 
 // To not break the test every time we add a new metric, we inherit from the NoopCollector.

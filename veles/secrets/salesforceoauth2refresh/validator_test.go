@@ -15,7 +15,6 @@
 package salesforceoauth2refresh_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,7 +24,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -34,6 +35,21 @@ const (
 	validatorTestRefresh        = "123456789ABCDEFABC1234567895123459876ABCDEFABC1234567895"
 	validatorExpectedBase64Data = "M01WRzEyMzQ1Njc4OS5BQl9DREVGLkFCQzEyMzQ1Njc4OUFCQzEyMzQ1Njc4OUFCQzE6MTIzNDU2Nzg5QUJDREVGQUJDMTIzNDU2Nzg5NTEyMzQ1Njc4OUFCQ0RFRkFCQzEyMzQ1Njc4OTU="
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2refresh.NewValidator(),
+		velestest.WithTrueNegatives(salesforceoauth2refresh.Credentials{
+			ID:      validatorTestClientID,
+			Secret:  validatorTestClientSecret,
+			Refresh: "refresh_token",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[salesforceoauth2refresh.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -82,7 +98,6 @@ func TestValidator(t *testing.T) {
 		refresh                  string
 		serverExpectedBase64Data string
 		serverResponseCode       int
-		cancelContext            bool
 		want                     veles.ValidationStatus
 		wantErr                  error
 		useServer                bool
@@ -139,31 +154,12 @@ func TestValidator(t *testing.T) {
 			refresh:            validatorTestRefresh,
 			want:               veles.ValidationInvalid,
 		},
-		{
-			name:                     "context cancelled",
-			id:                       validatorTestClientID,
-			secret:                   validatorTestClientSecret,
-			refresh:                  validatorTestRefresh,
-			serverExpectedBase64Data: validatorExpectedBase64Data,
-			serverResponseCode:       http.StatusOK,
-			cancelContext:            true,
-			want:                     veles.ValidationFailed,
-			wantErr:                  cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			server := mockSalesforceServer(t, validatorTestRefresh, tt.serverExpectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
-
-			if tt.cancelContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-			}
 
 			validator := salesforceoauth2refresh.NewValidator()
 			if server != nil {
@@ -178,7 +174,7 @@ func TestValidator(t *testing.T) {
 				Refresh: tt.refresh,
 			}
 
-			got, err := validator.Validate(ctx, cred)
+			got, err := validator.Validate(t.Context(), cred)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)

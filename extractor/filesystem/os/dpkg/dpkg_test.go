@@ -1319,7 +1319,7 @@ func TestExtract(t *testing.T) {
 				tt.path = "var/lib/dpkg/status"
 			}
 			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
+				FS: fakefs.DirFS(t, d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
 			cfg := tt.cfg
@@ -1615,7 +1615,7 @@ ID_LIKE=debian`
 			}
 
 			input := &filesystem.ScanInput{
-				FS:     scalibrfs.DirFS(d),
+				FS:     fakefs.DirFS(t, d),
 				Path:   tt.scanPath,
 				Reader: r,
 				Root:   d,

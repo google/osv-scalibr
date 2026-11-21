@@ -26,8 +26,8 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -53,7 +53,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 	inv := &inventory.Inventory{Packages: []*extractor.Package{copier.Copy(inputPackage).(*extractor.Package)}}
 
 	input := &annotator.ScanInput{
-		ScanRoot: scalibrfs.RealFSScanRoot(root),
+		ScanRoot: fakefs.RealFSScanRoot(t, root),
 	}
 
 	wantPackage := &extractor.Package{
@@ -275,7 +275,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: fakefs.RealFSScanRoot(t, root),
 			}
 
 			anno, err := npmsource.New(&cpb.PluginConfig{})
@@ -508,7 +508,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: fakefs.RealFSScanRoot(t, root),
 			}
 
 			anno, err := npmsource.New(&cpb.PluginConfig{})
@@ -734,7 +734,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			root := setupNPMLockfiles(t, tt.lockfiles)
-			fsys := scalibrfs.DirFS(root)
+			fsys := fakefs.DirFS(t, root)
 
 			got, err := npmsource.ResolvedFromLockfile("testproject", fsys)
 			gotErr := err != nil

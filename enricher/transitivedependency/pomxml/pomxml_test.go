@@ -43,7 +43,7 @@ func TestEnricher_Enrich(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -314,7 +314,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -843,7 +843,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: tempDir,
-			FS:   scalibrfs.DirFS(tempDir),
+			FS:   fakefs.DirFS(t, tempDir),
 		},
 	}
 
@@ -961,5 +961,85 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	slices.SortFunc(wantInventory.Packages, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
+	}
+}
+
+func TestEnricher_Enrich_UnversionedDependency(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
+	tempDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(tempDir, "pom.xml"), []byte(`
+	<project>
+		<groupId>org.example</groupId>
+		<artifactId>root</artifactId>
+		<version>1.0.0</version>
+		<dependencyManagement>
+			<dependencies>
+				<dependency>
+					<groupId>org.example</groupId>
+					<artifactId>missing-bom</artifactId>
+					<version>1.0.0</version>
+					<type>pom</type>
+					<scope>import</scope>
+				</dependency>
+			</dependencies>
+		</dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.example</groupId>
+				<artifactId>unversioned</artifactId>
+			</dependency>
+		</dependencies>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	srv := clienttest.NewMockHTTPServer(t)
+	apiClient, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
+	if err != nil {
+		t.Fatalf("failed to create enricher: %v", err)
+	}
+	enrichy.(*pomxml.Enricher).MavenClient = apiClient
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient, false)
+
+	inv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "org.example:unversioned",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID: "unversioned",
+					GroupID:    "org.example",
+				},
+			},
+		},
+	}
+	input := enricher.ScanInput{
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: tempDir,
+			FS:   fakefs.DirFS(t, tempDir),
+		},
+	}
+
+	err = enrichy.Enrich(t.Context(), &input, &inv)
+	if err == nil {
+		t.Fatal("Enrich() succeeded, want an error for unversioned root dependency")
+	}
+	for _, want := range []string{
+		"failed resolution for pom.xml",
+		"'dependencies.dependency.version' for org.example:unversioned:jar is missing",
+		"failed to import BOM org.example:missing-bom:1.0.0",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("Enrich() error = %q, want it to contain %q", err, want)
+		}
 	}
 }

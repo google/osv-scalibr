@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -30,7 +31,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -177,7 +177,7 @@ func TestReadWrite(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata"))
 	got, err := mavenRW.Read("my-app/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -659,7 +659,7 @@ func TestRead_MultiModuleDiscovery(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(dir)
+	fsys := fakefs.DirFS(t, dir)
 	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -735,6 +735,86 @@ func TestReadFindsLocalParentFromGitRoot(t *testing.T) {
 	}
 }
 
+func TestReadUnversionedDependency(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/bom/1.0.0/bom-1.0.0.pom", []byte(`<project>
+  <groupId>org.example</groupId>
+  <artifactId>bom</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>managed</artifactId>
+        <version>${undefined.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`))
+	dir := t.TempDir()
+	pom := `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>bom</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>missing-bom</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>managed</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>unmanaged</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	path := filepath.Join(dir, "pom.xml")
+	if err := os.WriteFile(path, []byte(pom), 0644); err != nil {
+		t.Fatal(err)
+	}
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rw, err := GetReadWriter(client, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = parser.ParseManifest(path, rw, "")
+	if err == nil {
+		t.Fatal("ParseManifest() succeeded, want an error for unversioned dependencies and failed BOM import")
+	}
+	for _, want := range []string{
+		"'dependencies.dependency.version' for org.example:managed:jar is missing",
+		"'dependencies.dependency.version' for org.example:unmanaged:jar is missing",
+		"failed to import BOM org.example:missing-bom:1.0.0",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("ParseManifest() error = %q, want it to contain %q", err, want)
+		}
+	}
+}
+
 func TestWriteDoesNotEscapeProjectRoot(t *testing.T) {
 	parent := t.TempDir()
 	project := filepath.Join(parent, "project")
@@ -753,7 +833,7 @@ func TestWriteDoesNotEscapeProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fsys := scalibrfs.DirFS(project)
+	fsys := fakefs.DirFS(t, project)
 	m, err := rw.Read("pom.xml", fsys)
 	if err != nil {
 		t.Fatal(err)
@@ -1356,7 +1436,7 @@ func TestRead_MultiModuleDiscovery_NonStandardPOM(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(dir)
+	fsys := fakefs.DirFS(t, dir)
 	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)

@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
@@ -388,6 +387,58 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "quoted-r",
+			path: "testdata/quoted-r.txt",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pandas",
+					Version:  "2.2.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 2}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/other-requirements.txt", LineNumber: 1}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "pandas==2.2.3"},
+				},
+				{
+					Name:     "PyCrypto",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 1}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "PyCrypto"},
+				},
+				{
+					Name:     "GMPY2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 2}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "GMPY2"},
+				},
+				{
+					Name:     "SymPy",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 3}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "SymPy"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name: "extras",
 			path: "testdata/extras.txt",
 			wantPackages: []*extractor.Package{
@@ -634,7 +685,7 @@ func TestExtract(t *testing.T) {
 			}
 			e.(*requirements.Extractor).Stats = collector
 
-			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
+			fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "."))
 
 			r, err := fsys.Open(tt.path)
 			defer func() {

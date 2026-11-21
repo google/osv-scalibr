@@ -70,7 +70,10 @@ func (r *realGovulncheckClient) RunGovulncheck(ctx context.Context, absModDir st
 	cmd := scan.Command(ctx, "-db", dbdirURL.String(), "-C", absModDir, "-json", "-mode", "source", "./...")
 	var b bytes.Buffer
 	cmd.Stdout = &b
-	cmd.Env = append(os.Environ(), "GOVERSION=go"+goVersion)
+	cmd.Env = os.Environ()
+	if goVersion != "" {
+		cmd.Env = append(cmd.Env, "GOVERSION=go"+goVersion)
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

@@ -15,7 +15,6 @@
 package supabase_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -23,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/supabase"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -31,6 +32,53 @@ const (
 	validatorTestSecretKey  = "sb_secret_abcdefghijklmnopqrstuvwxyz123456"
 	validatorTestProjectRef = "lphyfymaepklpuvaecry"
 )
+
+func TestAcceptPATValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		supabase.NewPATValidator(),
+		velestest.WithTrueNegatives(supabase.PAT{
+			Token: "sbp_osvscalibr000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.PAT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
+func TestAcceptProjectSecretKeyValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		supabase.NewProjectSecretKeyValidator(),
+		velestest.WithTrueNegatives(supabase.ProjectSecretKey{
+			Key:        validatorTestSecretKey,
+			ProjectRef: validatorTestProjectRef,
+		}),
+		velestest.WithMalformedSecrets(supabase.ProjectSecretKey{
+			Key:        validatorTestSecretKey,
+			ProjectRef: "",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.ProjectSecretKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[supabase.ProjectSecretKey](),
+	)
+}
+
+func TestAcceptServiceRoleJWTValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		supabase.NewServiceRoleJWTValidator(),
+		velestest.WithTrueNegatives(supabase.ServiceRoleJWT{
+			Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwaHlmeW1hZXBrbHB1dmFlY3J5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI2MTAzOSwiZXhwIjoyMDg0ODM3MDM5fQ.signature",
+		}),
+		velestest.WithMalformedSecrets(supabase.ServiceRoleJWT{Token: "not-a-jwt"}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.ServiceRoleJWT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[supabase.ServiceRoleJWT](),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -260,37 +308,6 @@ func TestSupabaseProjectSecretKeyValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestSupabasePATValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := supabase.NewPATValidator()
-	validator.HTTPC = client
-
-	pat := supabase.PAT{Token: validatorTestPAT}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, pat)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

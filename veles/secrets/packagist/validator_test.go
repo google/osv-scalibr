@@ -23,8 +23,77 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/packagist"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptAPIKeyValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		packagist.NewAPIKeyValidator(),
+		velestest.WithTrueNegatives(packagist.APIKey{
+			Key: "packagist_ack_osvscalibrinvalid000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[packagist.APIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
+func TestAcceptAPISecretValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		packagist.NewAPISecretValidator(),
+		velestest.WithTrueNegatives(packagist.APISecret{
+			Secret: "osvscalibr-fake-secret",
+			Key:    "osvscalibr-fake-key",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[packagist.APISecret]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
+func TestAcceptOrgReadTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		packagist.NewOrgReadTokenValidator(),
+		velestest.WithTrueNegatives(packagist.OrgReadToken{Token: "tok", RepoURL: "http://example.com"}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[packagist.OrgReadToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[packagist.OrgReadToken](),
+	)
+}
+
+func TestAcceptOrgUpdateTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		packagist.NewOrgUpdateTokenValidator(),
+		velestest.WithTrueNegatives(packagist.OrgUpdateToken{Token: "tok", RepoURL: "http://example.com"}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[packagist.OrgUpdateToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[packagist.OrgUpdateToken](),
+	)
+}
+
+func TestAcceptUserUpdateTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		packagist.NewUserUpdateTokenValidator(),
+		velestest.WithTrueNegatives(packagist.UserUpdateToken{
+			Token:    "tok",
+			Username: "test",
+			RepoURL:  "http://example.com",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[packagist.UserUpdateToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[packagist.UserUpdateToken](),
+	)
+}
 
 func TestAPIKeyValidator(t *testing.T) {
 	cases := []struct {

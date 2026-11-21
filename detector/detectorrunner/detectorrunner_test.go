@@ -23,12 +23,12 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/detectorrunner"
 	"github.com/google/osv-scalibr/extractor"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -183,7 +183,7 @@ func TestRun(t *testing.T) {
 			px, _ := packageindex.New([]*extractor.Package{})
 			tmp := t.TempDir()
 			gotFindings, gotStatus, err := detectorrunner.Run(
-				t.Context(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
+				t.Context(), stats.NoopCollector{}, tc.det, fakefs.RealFSScanRoot(t, tmp), px,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)

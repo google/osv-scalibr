@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 type fakeSigner struct{}
@@ -97,6 +98,20 @@ const (
 	badSecret        = "badSecret"
 	correctSignature = exampleAccessID + ":" + correctSecret
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		awsaccesskey.NewValidator(),
+		velestest.WithTrueNegatives(awsaccesskey.Credentials{
+			AccessID: exampleAccessID,
+			Secret:   badSecret,
+		}),
+		velestest.WithBrokenTransport(func(v *awsaccesskey.Validator) {
+			v.SetHTTPClient(velestest.BrokenClient)
+		}),
+	)
+}
 
 func TestValidator(t *testing.T) {
 	cases := []struct {

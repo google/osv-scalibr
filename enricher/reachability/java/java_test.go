@@ -60,7 +60,7 @@ func TestScan(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: jar,
-			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{

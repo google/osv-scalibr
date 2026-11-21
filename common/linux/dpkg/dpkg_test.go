@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
-	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestConffilePathIterator(t *testing.T) {
@@ -80,7 +80,7 @@ func TestConffilePathIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			root := dpkgutil.SetupDPKGInfo(t, tt.conffiles, false)
-			fs := scalibrfs.RealFSScanRoot(root).FS
+			fs := fakefs.DirFS(t, root)
 
 			it, err := NewConffilePathIterator(fs)
 			if err != nil {
@@ -114,7 +114,7 @@ func TestConffilePathIteratorContextCancel(t *testing.T) {
 	root := dpkgutil.SetupDPKGInfo(t, map[string]string{
 		"foo.conffiles": "/foo\n/bar",
 	}, false)
-	fs := scalibrfs.RealFSScanRoot(root).FS
+	fs := fakefs.DirFS(t, root)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	it, err := NewConffilePathIterator(fs)
@@ -130,7 +130,7 @@ func TestConffilePathIteratorContextCancel(t *testing.T) {
 }
 
 func TestConffilePathIteratorMissingInfoDir(t *testing.T) {
-	sfs := scalibrfs.RealFSScanRoot(t.TempDir()).FS
+	sfs := fakefs.DirFS(t, t.TempDir())
 	it, err := NewConffilePathIterator(sfs)
 	if err != nil {
 		t.Fatalf("NewConffilePathIterator() with missing info dir: got err %v, want nil", err)
@@ -196,7 +196,7 @@ func TestListFilePathIterator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			root := dpkgutil.SetupDPKGInfo(t, tt.list, false)
-			fs := scalibrfs.RealFSScanRoot(root).FS
+			fs := fakefs.DirFS(t, root)
 
 			it, err := NewListFilePathIterator(fs)
 			if err != nil {
@@ -230,7 +230,7 @@ func TestListFilePathIteratorContextCancel(t *testing.T) {
 	root := dpkgutil.SetupDPKGInfo(t, map[string]string{
 		"foo.list": "/foo\n/bar",
 	}, false)
-	fs := scalibrfs.RealFSScanRoot(root).FS
+	fs := fakefs.DirFS(t, root)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	it, err := NewListFilePathIterator(fs)
@@ -246,7 +246,7 @@ func TestListFilePathIteratorContextCancel(t *testing.T) {
 }
 
 func TestListFilePathIteratorMissingInfoDir(t *testing.T) {
-	sfs := scalibrfs.RealFSScanRoot(t.TempDir()).FS
+	sfs := fakefs.DirFS(t, t.TempDir())
 	it, err := NewListFilePathIterator(sfs)
 	if err != nil {
 		t.Fatalf("NewFileIterator() with missing info dir: got err %v, want nil", err)
