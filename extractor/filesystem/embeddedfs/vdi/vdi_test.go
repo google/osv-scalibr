@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -265,5 +266,36 @@ func TestExtractNonExistentVDI(t *testing.T) {
 	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
+	}
+}
+
+func TestExtractSymlinkEscapeRejected(t *testing.T) {
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, "disk.vdi")
+	validVDI, err := os.ReadFile(filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs-dynamic.vdi"))
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	if err := os.WriteFile(outsidePath, validVDI, 0o600); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", outsidePath, err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot(%q): %v", scanRoot, err)
+	}
+	defer func() { _ = root.Close() }()
+
+	extractor, err := vdi.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vdi.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: "disk.vdi",
+		Root: scanRoot,
+	}
+	if _, err := extractor.Extract(t.Context(), input); err == nil {
+		t.Errorf("Extract(disk.vdi) succeeded through escaping symlink, want error")
 	}
 }

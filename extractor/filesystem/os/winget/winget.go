@@ -20,13 +20,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -94,19 +94,17 @@ type Package struct {
 
 // Extract extracts packages from a Winget database file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	absPath, err := input.GetRealPath()
+	absPath, cleanup, err := input.OpenOSPath()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
+		return inventory.Inventory{}, fmt.Errorf("OpenOSPath(%q): %w", input.Path, err)
 	}
-	// The file got copied to a temporary dir, remove it at the end.
 	defer func() {
-		dir := filepath.Dir(absPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", absPath, err)
 		}
 	}()
 
-	db, err := sql.Open("sqlite", absPath)
+	db, err := sql.Open("sqlite", scalibrfs.SQLiteReadOnlyURI(absPath))
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to open Winget database %s: %w", absPath, err)
 	}

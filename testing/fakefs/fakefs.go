@@ -33,22 +33,35 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// DirFS returns a scalibrfs.DirFS rooted at dir and registers a tb.Cleanup hook
-// to release its underlying os.Root handle before tb.TempDir() cleanup runs.
+// DirFS returns a scalibrfs.DirFS rooted at dir.
 func DirFS(tb testing.TB, dir string) scalibrfs.FS {
 	tb.Helper()
-	fsys := scalibrfs.DirFS(dir)
+	return scalibrfs.DirFS(dir)
+}
+
+// RealFSScanRoot returns an unconfined scalibrfs.ScanRoot rooted at path.
+func RealFSScanRoot(tb testing.TB, path string) *scalibrfs.ScanRoot {
+	tb.Helper()
+	return &scalibrfs.ScanRoot{FS: DirFS(tb, path), Path: path}
+}
+
+// ConfinedDirFS returns a scalibrfs.ConfinedDirFS rooted at dir and registers a
+// tb.Cleanup hook to release its underlying os.Root handle before tb.TempDir()
+// cleanup runs.
+func ConfinedDirFS(tb testing.TB, dir string) scalibrfs.FS {
+	tb.Helper()
+	fsys := scalibrfs.ConfinedDirFS(dir)
 	if c, ok := fsys.(io.Closer); ok {
 		tb.Cleanup(func() { _ = c.Close() })
 	}
 	return fsys
 }
 
-// RealFSScanRoot returns a scalibrfs.ScanRoot rooted at path and registers a
-// tb.Cleanup hook to close its underlying os.Root handle.
-func RealFSScanRoot(tb testing.TB, path string) *scalibrfs.ScanRoot {
+// ConfinedScanRoot returns a confined scalibrfs.ScanRoot rooted at path and
+// registers a tb.Cleanup hook to close its underlying os.Root handle.
+func ConfinedScanRoot(tb testing.TB, path string) *scalibrfs.ScanRoot {
 	tb.Helper()
-	return &scalibrfs.ScanRoot{FS: DirFS(tb, path), Path: path}
+	return &scalibrfs.ScanRoot{FS: ConfinedDirFS(tb, path), Path: path}
 }
 
 // FileModifier allows mutating a file (e.g., compressing data, changing mode)

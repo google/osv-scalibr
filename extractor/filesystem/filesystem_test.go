@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -1391,6 +1392,357 @@ func TestIsInterestingExecutable(t *testing.T) {
 
 			if got != want {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, want)
+			}
+		})
+	}
+}
+
+type statErrEntry struct {
+	fs.DirEntry
+
+	err   error
+	calls *int
+}
+
+func (e statErrEntry) Info() (fs.FileInfo, error) {
+	if e.calls != nil {
+		*e.calls++
+	}
+	return nil, e.err
+}
+
+type statErrFS struct {
+	fstest.MapFS
+
+	err       error
+	infoCalls *int
+}
+
+// Open returns ErrUnsupported so diriterate.ReadDir uses ReadDir instead of MapFS's ReadDirFile.
+func (statErrFS) Open(_ string) (fs.File, error) {
+	return nil, errors.ErrUnsupported
+}
+
+func (f statErrFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := f.MapFS.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range entries {
+		if !e.IsDir() {
+			entries[i] = statErrEntry{DirEntry: e, err: f.err, calls: f.infoCalls}
+		}
+	}
+	return entries, nil
+}
+
+type statCapturingExtractor struct {
+	targetPath string
+	called     bool
+	firstErr   error
+	secondErr  error
+}
+
+func (*statCapturingExtractor) Name() string                       { return "test/stat-capture" }
+func (*statCapturingExtractor) Version() int                       { return 0 }
+func (*statCapturingExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *statCapturingExtractor) FileRequired(api filesystem.FileAPI) bool {
+	if api.Path() == e.targetPath {
+		e.called = true
+		_, e.firstErr = api.Stat()
+		_, e.secondErr = api.Stat()
+	}
+	return false
+}
+func (*statCapturingExtractor) Extract(_ context.Context, _ *filesystem.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, nil
+}
+
+func TestRun_LazyFileAPIStatCachesEntryInfoError(t *testing.T) {
+	sentinel := errors.New("injected entry stat failure")
+	infoCalls := 0
+	fsys := statErrFS{
+		MapFS: fstest.MapFS{
+			"a/b/leaf.txt": &fstest.MapFile{Data: []byte("hello")},
+		},
+		err:       &fs.PathError{Op: "lstat", Path: "leaf.txt", Err: sentinel},
+		infoCalls: &infoCalls,
+	}
+	ex := &statCapturingExtractor{targetPath: "a/b/leaf.txt"}
+
+	_, _, err := filesystem.Run(t.Context(), &filesystem.Config{
+		Stats:      stats.NoopCollector{},
+		ScanRoots:  []*scalibrfs.ScanRoot{{FS: fsys}},
+		Extractors: []filesystem.Extractor{ex},
+	})
+	if err != nil {
+		t.Fatalf("filesystem.Run: %v", err)
+	}
+	if !ex.called {
+		t.Fatal("statCapturingExtractor was never invoked for a/b/leaf.txt")
+	}
+	if !errors.Is(ex.firstErr, sentinel) {
+		t.Fatalf("api.Stat() error = %v, want %v", ex.firstErr, sentinel)
+	}
+	if infoCalls != 1 {
+		t.Errorf("DirEntry.Info() called %d times across 2 api.Stat() calls, want 1 (cached)", infoCalls)
+	}
+	if !errors.Is(ex.secondErr, sentinel) {
+		t.Errorf("second api.Stat() error = %v, want cached %v", ex.secondErr, sentinel)
+	}
+}
+
+type countingDirEntry struct {
+	fs.DirEntry
+
+	calls *int
+}
+
+func (e countingDirEntry) Info() (fs.FileInfo, error) {
+	if e.calls != nil {
+		*e.calls++
+	}
+	return e.DirEntry.Info()
+}
+
+type countingEntryFS struct {
+	fstest.MapFS
+
+	infoCalls *int
+	statCalls *int
+}
+
+// Open returns ErrUnsupported on directories so diriterate.ReadDir uses ReadDir.
+func (f countingEntryFS) Open(name string) (fs.File, error) {
+	if name == "." || name == "a" {
+		return nil, errors.ErrUnsupported
+	}
+	return f.MapFS.Open(name)
+}
+
+func (f countingEntryFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := f.MapFS.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range entries {
+		if !e.IsDir() {
+			entries[i] = countingDirEntry{DirEntry: e, calls: f.infoCalls}
+		}
+	}
+	return entries, nil
+}
+
+func (f countingEntryFS) Stat(name string) (fs.FileInfo, error) {
+	if name == "." || name == "a" {
+		return f.MapFS.Stat(name)
+	}
+	if f.statCalls != nil {
+		*f.statCalls++
+	}
+	return nil, errors.New("unexpected file FS.Stat call")
+}
+
+type multiFileStatExtractor struct {
+	gotSizes      map[string]int64
+	mismatchCache bool
+	statErr       error
+}
+
+func (*multiFileStatExtractor) Name() string                       { return "test/multi-stat" }
+func (*multiFileStatExtractor) Version() int                       { return 0 }
+func (*multiFileStatExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *multiFileStatExtractor) FileRequired(api filesystem.FileAPI) bool {
+	info1, err1 := api.Stat()
+	info2, err2 := api.Stat()
+	if err1 != nil {
+		e.statErr = err1
+		return false
+	}
+	if err2 != nil {
+		e.statErr = err2
+		return false
+	}
+	if info2 != info1 {
+		e.mismatchCache = true
+	}
+	e.gotSizes[api.Path()] = info1.Size()
+	return false
+}
+func (*multiFileStatExtractor) Extract(_ context.Context, _ *filesystem.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, nil
+}
+
+func TestRun_LazyFileAPIStatReusesDirEntryInfoAndResetsAcrossFiles(t *testing.T) {
+	infoCalls := 0
+	statCalls := 0
+	fsys := countingEntryFS{
+		MapFS: fstest.MapFS{
+			"a/first.txt":  &fstest.MapFile{Data: []byte("hello")},
+			"a/second.txt": &fstest.MapFile{Data: []byte("hello world")},
+		},
+		infoCalls: &infoCalls,
+		statCalls: &statCalls,
+	}
+	ex := &multiFileStatExtractor{gotSizes: make(map[string]int64)}
+
+	_, _, err := filesystem.Run(t.Context(), &filesystem.Config{
+		Stats:      stats.NoopCollector{},
+		ScanRoots:  []*scalibrfs.ScanRoot{{FS: fsys}},
+		Extractors: []filesystem.Extractor{ex},
+	})
+	if err != nil {
+		t.Fatalf("filesystem.Run: %v", err)
+	}
+	if ex.statErr != nil {
+		t.Fatalf("api.Stat() unexpected error: %v", ex.statErr)
+	}
+	if ex.mismatchCache {
+		t.Errorf("second api.Stat() on same file did not return cached fs.FileInfo")
+	}
+	if statCalls != 0 {
+		t.Errorf("non-root FS.Stat calls = %d, want 0", statCalls)
+	}
+	if infoCalls != 2 {
+		t.Errorf("DirEntry.Info() calls = %d across 2 files (4 api.Stat calls), want 2", infoCalls)
+	}
+	wantSizes := map[string]int64{"a/first.txt": 5, "a/second.txt": 11}
+	if diff := cmp.Diff(wantSizes, ex.gotSizes); diff != "" {
+		t.Errorf("api.Stat() sizes diff (-want +got):\n%s", diff)
+	}
+}
+
+type symlinkTargetFS struct {
+	fstest.MapFS
+
+	infoCalls *int
+	statCalls *int
+}
+
+// Open returns ErrUnsupported on directories so diriterate.ReadDir uses ReadDir,
+// and resolves "link.bin" to "target.bin" when opened by an extractor.
+func (f symlinkTargetFS) Open(name string) (fs.File, error) {
+	if name == "." {
+		return nil, errors.ErrUnsupported
+	}
+	if name == "link.bin" {
+		return f.MapFS.Open("target.bin")
+	}
+	return f.MapFS.Open(name)
+}
+
+func (f symlinkTargetFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := f.MapFS.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range entries {
+		if e.Name() == "link.bin" {
+			entries[i] = countingDirEntry{DirEntry: e, calls: f.infoCalls}
+		}
+	}
+	return entries, nil
+}
+
+func (f symlinkTargetFS) Stat(name string) (fs.FileInfo, error) {
+	if name == "link.bin" {
+		if f.statCalls != nil {
+			*f.statCalls++
+		}
+		return f.MapFS.Stat("target.bin")
+	}
+	return f.MapFS.Stat(name)
+}
+
+type symlinkStatExtractor struct {
+	targetPath string
+	gotMode    fs.FileMode
+	gotSize    int64
+	statErr    error
+	extracted  int
+}
+
+func (*symlinkStatExtractor) Name() string                       { return "test/symlink-stat" }
+func (*symlinkStatExtractor) Version() int                       { return 0 }
+func (*symlinkStatExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *symlinkStatExtractor) FileRequired(api filesystem.FileAPI) bool {
+	if api.Path() != e.targetPath {
+		return false
+	}
+	info, err := api.Stat()
+	if err != nil {
+		e.statErr = err
+		return false
+	}
+	e.gotMode = info.Mode()
+	e.gotSize = info.Size()
+	return true
+}
+func (e *symlinkStatExtractor) Extract(_ context.Context, _ *filesystem.ScanInput) (inventory.Inventory, error) {
+	e.extracted++
+	return inventory.Inventory{}, nil
+}
+
+func TestRun_LazyFileAPIStatSymlinkUsesFSStat(t *testing.T) {
+	tests := []struct {
+		name          string
+		maxFileSize   int64
+		wantExtracted int
+	}{
+		{
+			name:          "extracts_when_within_max_file_size",
+			maxFileSize:   200,
+			wantExtracted: 1,
+		},
+		{
+			name:          "skips_when_target_exceeds_max_file_size",
+			maxFileSize:   50,
+			wantExtracted: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			infoCalls := 0
+			statCalls := 0
+			fsys := symlinkTargetFS{
+				MapFS: fstest.MapFS{
+					"target.bin": &fstest.MapFile{Data: []byte(strings.Repeat("x", 100))},
+					// Symlink data is 10 bytes (<= 50), whereas target.bin is 100 bytes (> 50).
+					"link.bin": &fstest.MapFile{Data: []byte("target.bin"), Mode: fs.ModeSymlink | 0o777},
+				},
+				infoCalls: &infoCalls,
+				statCalls: &statCalls,
+			}
+			ex := &symlinkStatExtractor{targetPath: "link.bin"}
+
+			_, _, err := filesystem.Run(t.Context(), &filesystem.Config{
+				Stats:        stats.NoopCollector{},
+				ScanRoots:    []*scalibrfs.ScanRoot{{FS: fsys}},
+				Extractors:   []filesystem.Extractor{ex},
+				ReadSymlinks: true,
+				MaxFileSize:  tc.maxFileSize,
+			})
+			if err != nil {
+				t.Fatalf("filesystem.Run(MaxFileSize=%d): %v", tc.maxFileSize, err)
+			}
+			if ex.statErr != nil {
+				t.Fatalf("api.Stat() on symlink failed: %v", ex.statErr)
+			}
+			if infoCalls != 0 {
+				t.Errorf("symlink DirEntry.Info() calls = %d, want 0", infoCalls)
+			}
+			if statCalls != 1 {
+				t.Errorf("symlink FS.Stat calls = %d, want 1", statCalls)
+			}
+			if !ex.gotMode.IsRegular() {
+				t.Errorf("api.Stat().Mode() = %v, want regular target mode", ex.gotMode)
+			}
+			if ex.gotSize != 100 {
+				t.Errorf("api.Stat().Size() = %d, want 100", ex.gotSize)
+			}
+			if ex.extracted != tc.wantExtracted {
+				t.Errorf("Extract calls (MaxFileSize=%d) = %d, want %d", tc.maxFileSize, ex.extracted, tc.wantExtracted)
 			}
 		})
 	}
