@@ -1,0 +1,6 @@
+name: odd-subsections
+dependencies:
+  - pip:
+      numpy: 1.26.0
+  - poetry:
+    - torch==2.0.0
