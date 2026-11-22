@@ -238,6 +238,12 @@ func validateGoVersion(vers string) (string, error) {
 
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")
+
+	// Strip experiment suffix (e.g. "1.26.1-X:nodwarf5" -> "1.26.1",
+	// "1.20rc1-X:loopvar" -> "1.20rc1") to avoid treating experiment builds
+	// as prereleases or unknown versions against vulnerability databases.
+	res, _, _ = strings.Cut(res, "-X:")
+
 	return res, nil
 }
 
