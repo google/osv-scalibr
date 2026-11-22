@@ -271,6 +271,48 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "replacements_ version before no version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/replace-version-first.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "golang.org/x/text",
+					Version:  "0.3.5",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/replace-version-first.mod", 3),
+				},
+			},
+		},
+		{
+			Name: "replacements_ version after no version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/replace-version-last.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "golang.org/x/text",
+					Version:  "0.3.5",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/replace-version-last.mod", 5),
+				},
+			},
+		},
+		{
+			Name: "replacements_ not chained",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/replace-not-chained.mod",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "example.com/new/jwt",
+					Version:  "3.2.1+incompatible",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/replace-not-chained.mod", 4),
+				},
+			},
+		},
+		{
 			Name: "test extractor for go > 1.16",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/indirect-1.23.mod",
