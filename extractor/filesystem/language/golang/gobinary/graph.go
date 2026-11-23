@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 
+	gocommon "github.com/google/osv-scalibr/extractor/filesystem/language/golang/common"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -204,7 +205,7 @@ func resolvePackageModule(pkg string, bi *buildinfo.BuildInfo, mainModPath strin
 
 	for _, dep := range bi.Deps {
 		target := dep.Path
-		if dep.Replace != nil && dep.Replace.Path != "" {
+		if dep.Replace != nil && gocommon.IsRemoteReplacement(dep.Replace.Path, dep.Replace.Version) {
 			target = dep.Replace.Path
 			if hasPackagePrefix(pkg, dep.Replace.Path) && len(dep.Replace.Path) > bestLen {
 				bestMod, bestLen = target, len(dep.Replace.Path)

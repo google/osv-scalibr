@@ -72,7 +72,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case purl.TypeComposer:
 		return composerpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGolang:
-		return gopurl.MakePackageURL(p.Name, p.Version)
+		return gopurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGithub:

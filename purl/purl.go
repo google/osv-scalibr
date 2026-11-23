@@ -276,6 +276,7 @@ const (
 	SourceRPM           = "sourcerpm"
 	BuildNumber         = "buildnumber"
 	PackageDependencies = "packagedependencies"
-	Classifier          = "classifier" // Maven specific qualifier
-	Type                = "type"       // Maven specific qualifier
+	Classifier          = "classifier"   // Maven specific qualifier
+	Type                = "type"         // Maven specific qualifier
+	ReplacePath         = "replace_path" // Go specific qualifier
 )

@@ -39,6 +39,13 @@ func TestResolvePackageModule(t *testing.T) {
 				Version: "v1.0.0",
 			},
 		}, {
+			Path:    "example.com/localreplaced",
+			Version: "v0.0.0",
+			Replace: &debug.Module{
+				Path:    "./staging/src/example.com/localreplaced",
+				Version: "(devel)",
+			},
+		}, {
 			Path:    "internalmod",
 			Version: "v1.0.0",
 		}, {
@@ -95,6 +102,11 @@ func TestResolvePackageModule(t *testing.T) {
 		pkg:         "example.com/replacement/internal",
 		mainModPath: "example.com/mainmod",
 		want:        "example.com/replacement",
+	}, {
+		name:        "locally_replaced_module_resolves_to_original_module_path",
+		pkg:         "example.com/localreplaced/subpkg",
+		mainModPath: "example.com/mainmod",
+		want:        "example.com/localreplaced",
 	}, {
 		name:        "dependency_module_with_dot_in_version_resolves_to_dependency_module",
 		pkg:         "example.com/dep.v2",
