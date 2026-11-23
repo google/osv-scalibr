@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	golangmeta "github.com/google/osv-scalibr/extractor/filesystem/language/golang/metadata"
 	gopurl "github.com/google/osv-scalibr/extractor/filesystem/language/golang/purl"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -27,6 +28,7 @@ func TestMakePackageURL(t *testing.T) {
 		desc    string
 		name    string
 		version string
+		meta    any
 		want    *purl.PackageURL
 	}{
 		{
@@ -61,11 +63,24 @@ func TestMakePackageURL(t *testing.T) {
 				Version: "1.2.3",
 			},
 		},
+		{
+			desc:    "local_replace_path_qualifier",
+			name:    "k8s.io/api",
+			version: "0.0.0",
+			meta:    &golangmeta.Metadata{LocalReplacePath: "./staging/src/k8s.io/api"},
+			want: &purl.PackageURL{
+				Type:       purl.TypeGolang,
+				Name:       "api",
+				Namespace:  "k8s.io",
+				Version:    "0.0.0",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{purl.ReplacePath: "./staging/src/k8s.io/api"}),
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			got := gopurl.MakePackageURL(tt.name, tt.version)
+			got := gopurl.MakePackageURL(tt.name, tt.version, tt.meta)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("MakePackageURL() returned unexpected diff (-want +got):\n%s", diff)
 			}
