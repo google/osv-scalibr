@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -166,18 +166,17 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 }
 
 func (e Extractor) extractFromSQLite(ctx context.Context, input *filesystem.ScanInput, osrelease map[string]string) ([]*extractor.Package, error) {
-	absPath, err := input.GetRealPath()
+	absPath, cleanup, err := input.OpenOSPath()
 	if err != nil {
-		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
+		return nil, fmt.Errorf("OpenOSPath(%q): %w", input.Path, err)
 	}
 	defer func() {
-		dir := filepath.Dir(absPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", absPath, err)
 		}
 	}()
 
-	db, err := sql.Open("sqlite", absPath)
+	db, err := sql.Open("sqlite", scalibrfs.SQLiteReadOnlyURI(absPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open FreeBSD pkg database %s: %w", absPath, err)
 	}

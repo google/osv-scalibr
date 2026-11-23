@@ -778,8 +778,17 @@ func (wc *walkContext) printStatus() {
 // GetRealPath copies the file into an isolated temporary directory on the scanning host's
 // filesystem and returns its absolute path. It is up to the caller to delete the temporary
 // directory (filepath.Dir(realPath)) once they are done using it.
+//
+// Prefer OpenOSPath or OpenOSFile when an isolated copy is not always required.
 func (i *ScanInput) GetRealPath() (string, error) {
 	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
+}
+
+// OpenOSPath returns a host filesystem path for the scanned file along with a cleanup function.
+// On unconfined real filesystems (os.DirFS) it returns the in-place path without copying; on
+// confined or virtual filesystems it copies the file into an isolated temporary directory.
+func (i *ScanInput) OpenOSPath() (string, func() error, error) {
+	return scalibrfs.OpenOSPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // OpenOSFile returns an *os.File handle for the scanned file along with a cleanup function.
