@@ -24,11 +24,11 @@ import (
 	"io"
 	"io/fs"
 	"regexp"
-	"runtime/debug"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	gocommon "github.com/google/osv-scalibr/extractor/filesystem/language/golang/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -207,18 +207,17 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 	}
 
 	for _, dep := range binfo.Deps {
-		pkgName, pkgVers := parseDependency(dep)
-		if pkgName == "" {
-			continue
-		}
-
-		pkgVers = strings.TrimPrefix(pkgVers, "v")
-
 		pkg := &extractor.Package{
-			Name:     pkgName,
-			Version:  pkgVers,
+			Name:     dep.Path,
+			Version:  strings.TrimPrefix(dep.Version, "v"),
 			PURLType: purl.TypeGolang,
 			Location: extractor.LocationFromPath(filename),
+		}
+		if dep.Replace != nil {
+			gocommon.ApplyReplacement(pkg, dep.Replace.Path, dep.Replace.Version)
+		}
+		if pkg.Name == "" {
+			continue
 		}
 		res = append(res, pkg)
 	}
@@ -239,17 +238,6 @@ func validateGoVersion(vers string) (string, error) {
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")
 	return res, nil
-}
-
-func parseDependency(d *debug.Module) (string, string) {
-	dep := d
-	// Handle module replacement, but don't replace module if the replacement
-	// doesn't have a package name.
-	if dep.Replace != nil && dep.Replace.Path != "" {
-		dep = dep.Replace
-	}
-
-	return dep.Path, dep.Version
 }
 
 func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Package {
