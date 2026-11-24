@@ -22,6 +22,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	golangmeta "github.com/google/osv-scalibr/extractor/filesystem/language/golang/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
@@ -203,10 +204,11 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "./fork/net",
-					Version:  "",
+					Name:     "golang.org/x/net",
+					Version:  "1.2.3",
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/replace-local.mod", 7),
+					Metadata: &golangmeta.Metadata{LocalReplacePath: "./fork/net"},
 				},
 				{
 					Name:     "github.com/BurntSushi/toml",
