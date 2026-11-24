@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/groupid"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
@@ -402,6 +403,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 					groupID = metadata.GroupID
 					packageManifest = nil
 				}
+			}
+			// Override with a known group ID when MANIFEST.MF omits a usable
+			// artifact ID (e.g. multi-word Bundle-Name or per-entry Name headers).
+			if newGroupID := groupid.FromArtifactID(p.ArtifactID); newGroupID != "" {
+				groupID = newGroupID
+				packageManifest = nil
 			}
 			packageFilename = append(packageFilename, &extractor.Package{
 				Name:     fmt.Sprintf("%s:%s", groupID, p.ArtifactID),

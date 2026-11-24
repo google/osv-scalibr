@@ -626,6 +626,40 @@ func TestExtract(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name:            "Known_group_ID_from_filename_when_manifest_has_no_group_ID",
+			description:     "Applies known artifactID-to-groupID mapping when MANIFEST.MF lacks a valid group ID or single-token artifact ID.",
+			path:            filepath.FromSlash("testdata/libthrift-0.12.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/manifest-no-group-id/MANIFEST.MF"),
+			extractFilename: true,
+			want: []*extractor.Package{{
+				Name:     "org.apache.thrift:libthrift",
+				Version:  "0.12.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
+					ArtifactID: "libthrift",
+					GroupID:    "org.apache.thrift",
+				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/libthrift-0.12.0.jar")),
+			}},
+		},
+		{
+			name:            "Known_group_ID_from_filename_overrides_manifest_group_ID",
+			description:     "Applies known artifactID-to-groupID mapping from filename when MANIFEST.MF sets a mangled group ID and non-matching artifact ID.",
+			path:            filepath.FromSlash("testdata/derby-10.14.2.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF"),
+			extractFilename: true,
+			want: []*extractor.Package{{
+				Name:     "org.apache.derby:derby",
+				Version:  "10.14.2.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
+					ArtifactID: "derby",
+					GroupID:    "org.apache.derby",
+				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/derby-10.14.2.0.jar")),
+			}},
+		},
 	}
 
 	for _, tt := range tests {
