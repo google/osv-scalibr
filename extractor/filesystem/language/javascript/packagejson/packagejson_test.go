@@ -282,6 +282,42 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{},
 		},
 		{
+			name:         "Unity_built-in_module_in_package_cache",
+			path:         "testdata/unity/Library/PackageCache/com.unity.modules.ai@1.0.0/package.json",
+			wantPackages: []*extractor.Package{},
+		},
+		{
+			name:         "Unity_built-in_module_in_editor_install",
+			path:         "testdata/unity/Editor/Data/Resources/PackageManager/BuiltInPackages/com.unity.modules.ai/package.json",
+			wantPackages: []*extractor.Package{},
+		},
+		{
+			name: "npm_package_with_Unity_module_name_in_node_modules",
+			path: "testdata/unity/modules/com.unity.modules.ai/package.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "com.unity.modules.ai",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/unity/modules/com.unity.modules.ai/package.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+				},
+			},
+		},
+		{
+			name: "npm_package_nested_inside_Unity_package_cache",
+			path: "testdata/unity/Library/PackageCache/com.example.tool@1.0.0/modules/left-pad/package.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "left-pad",
+					Version:  "1.3.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/unity/Library/PackageCache/com.example.tool@1.0.0/modules/left-pad/package.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+				},
+			},
+		},
+		{
 			name: "Undici_package_with_nonstandard_contributors_parsed_correctly",
 			path: "testdata/undici-package.json",
 			wantPackages: []*extractor.Package{
