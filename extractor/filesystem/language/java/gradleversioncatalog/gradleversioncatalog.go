@@ -45,8 +45,10 @@ const (
 // bundles only group already-declared libraries, and Gradle plugins
 // resolve to a different PURL space than Maven artifacts.
 type catalogFile struct {
-	Versions  map[string]string `toml:"versions"`
-	Libraries map[string]any    `toml:"libraries"`
+	// [versions] entries are either plain strings or rich version tables,
+	// e.g. { strictly = "1.0" }.
+	Versions  map[string]any `toml:"versions"`
+	Libraries map[string]any `toml:"libraries"`
 }
 
 // Extractor extracts Maven packages from Gradle Version Catalog files.
@@ -128,7 +130,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 // rich version table containing strictly/require/prefer. A missing version
 // resolves to empty (Gradle allows version-less entries; downstream tools
 // treat them as unpinned).
-func resolveLibrary(raw any, versions map[string]string) (group, artifact, version string, ok bool) {
+func resolveLibrary(raw any, versions map[string]any) (group, artifact, version string, ok bool) {
 	switch v := raw.(type) {
 	case string:
 		parts := strings.SplitN(v, ":", 3)
@@ -169,7 +171,7 @@ func resolveLibrary(raw any, versions map[string]string) (group, artifact, versi
 // Resolution order, mirroring Gradle's runtime behavior:
 //   - rich {strictly} wins over {require} wins over {prefer}
 //   - {ref} indirects into the [versions] table
-func resolveVersion(raw any, versions map[string]string) string {
+func resolveVersion(raw any, versions map[string]any) string {
 	switch v := raw.(type) {
 	case nil:
 		return ""
@@ -177,7 +179,9 @@ func resolveVersion(raw any, versions map[string]string) string {
 		return v
 	case map[string]any:
 		if ref, ok := v["ref"].(string); ok {
-			return versions[ref]
+			// The referenced entry may itself be a rich version, but it cannot
+			// reference another entry.
+			return resolveVersion(versions[ref], nil)
 		}
 		if s, ok := v["strictly"].(string); ok {
 			return s

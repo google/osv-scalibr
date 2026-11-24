@@ -1,0 +1,12 @@
+[versions]
+groovy = "3.0.5"
+# Entries in [versions] can also be rich versions
+commons-codec = { strictly = "1.17.1" }
+commons-lang = { require = "3.15.0" }
+okhttp = { prefer = "4.12.0" }
+
+[libraries]
+groovy-core = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.ref = "commons-lang" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version = { ref = "okhttp" } }
