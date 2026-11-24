@@ -326,9 +326,9 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	//  - dedupe dependencies and dependency management
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
-	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, r.MavenRegistryAPIClient, groupID, artifactID, version)
-	})
+	if err := mavenutil.FinalizeDependencies(ctx, r.MavenRegistryAPIClient, &project); err != nil {
+		return nil, err
+	}
 
 	groups := make(map[manifest.RequirementKey][]string)
 	requirements := addRequirements([]resolve.RequirementVersion{}, groups, project.Dependencies, "")

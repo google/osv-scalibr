@@ -17,10 +17,13 @@
 package podman_test
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	_ "modernc.org/sqlite"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -274,5 +277,69 @@ func TestExtract_SymlinkEscapeRejected(t *testing.T) {
 	}
 	if _, err := extr.Extract(t.Context(), input); err == nil {
 		t.Fatal("Extract() succeeded on symlink escaping scan root, want error")
+	}
+}
+
+func TestExtract_SQLiteSpecialPathAndReadOnlyWAL(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("chmod 0555 does not restrict root")
+	}
+
+	data, err := os.ReadFile("testdata/db.sql")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	walSrc := filepath.Join(t.TempDir(), "db.sql")
+	if err := os.WriteFile(walSrc, data, 0o600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	db, err := sql.Open("sqlite", walSrc)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	if _, err := db.ExecContext(t.Context(), "PRAGMA journal_mode=WAL;"); err != nil {
+		_ = db.Close()
+		t.Fatalf("PRAGMA journal_mode=WAL: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("db.Close: %v", err)
+	}
+	walData, err := os.ReadFile(walSrc)
+	if err != nil {
+		t.Fatalf("os.ReadFile(wal): %v", err)
+	}
+
+	scanRoot := filepath.Join(t.TempDir(), "dir?_pragma=evil")
+	if err := os.MkdirAll(scanRoot, 0o755); err != nil {
+		t.Fatalf("os.MkdirAll: %v", err)
+	}
+	dbPath := filepath.Join(scanRoot, "db.sql")
+	if err := os.WriteFile(dbPath, walData, 0o444); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	if err := os.Chmod(scanRoot, 0o555); err != nil {
+		t.Fatalf("os.Chmod(0555): %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(scanRoot, 0o755) })
+
+	extr, err := podman.New(&cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{
+			{Config: &cpb.PluginSpecificConfig_Podman{Podman: &cpb.PodmanConfig{IncludeStopped: true}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("podman.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   scalibrfs.DirFS(scanRoot),
+		Path: "db.sql",
+		Root: scanRoot,
+	}
+	got, err := extr.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract() on 0555 WAL DB in '?' path failed: %v", err)
+	}
+	if len(got.Packages) == 0 {
+		t.Fatalf("Extract() returned 0 packages, want non-empty")
 	}
 }

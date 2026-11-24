@@ -129,6 +129,7 @@ message Package {
     NetportsMetadata netports_metadata = 45;
     PythonRequirementsMetadata python_requirements_metadata = 21;
     PythonSetupMetadata python_setup_metadata = 44;
+    GoMetadata go_metadata = 76;
     ContainerdContainerMetadata containerd_container_metadata = 22;
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
@@ -692,6 +693,10 @@ message PythonRequirementsMetadata {
 
 message PythonSetupMetadata {
   string version_comparator = 2;
+}
+
+message GoMetadata {
+  string local_replace_path = 1;
 }
 
 // Used to report open ports on a system.

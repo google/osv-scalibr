@@ -76,8 +76,8 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			}
 
 			dbPath := path.Join(dir, file)
-			// Skip files that don't exist.
-			if _, err := fs.Stat(input.ScanRoot.FS, dbPath); err != nil {
+			// Skip files that don't exist or are directories.
+			if info, err := fs.Stat(input.ScanRoot.FS, dbPath); err != nil || info.IsDir() {
 				continue
 			}
 
@@ -91,15 +91,28 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 }
 
 func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, mainPackages *mainOSPackages, locationToPKGs map[string][]*extractor.Package) error {
-	realDBPath, err := scalibrfs.GetRealPath(root, dbPath, nil)
-	if err != nil {
-		return fmt.Errorf("GetRealPath(%v, %v): %w", root, dbPath, err)
+	var (
+		realDBPath string
+		cleanup    func() error
+		err        error
+	)
+	if strings.HasSuffix(dbPath, ".sqlite") {
+		// erikvarga/go-rpmdb opens SQLite databases without ?mode=ro&immutable=1
+		// and rejects file: URIs, so keep an isolated copy for .sqlite DBs.
+		realDBPath, err = scalibrfs.GetRealPath(root, dbPath, nil)
+		if err != nil {
+			return fmt.Errorf("GetRealPath(%q): %w", dbPath, err)
+		}
+		cleanup = func() error { return os.RemoveAll(filepath.Dir(realDBPath)) }
+	} else {
+		realDBPath, cleanup, err = scalibrfs.OpenOSPath(root, dbPath, nil)
+		if err != nil {
+			return fmt.Errorf("OpenOSPath(%q): %w", dbPath, err)
+		}
 	}
-	// The file got copied to a temporary dir, remove it at the end.
 	defer func() {
-		dir := filepath.Dir(realDBPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", realDBPath, err)
 		}
 	}()
 

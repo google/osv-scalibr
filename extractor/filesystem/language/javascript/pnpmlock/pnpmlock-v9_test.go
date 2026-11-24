@@ -394,6 +394,13 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "files",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/files.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{},
+		},
 	}
 
 	for _, tt := range tests {

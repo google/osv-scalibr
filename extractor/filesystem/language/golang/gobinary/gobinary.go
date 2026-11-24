@@ -20,14 +20,15 @@ import (
 	"context"
 	"debug/buildinfo"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"regexp"
-	"runtime/debug"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	gocommon "github.com/google/osv-scalibr/extractor/filesystem/language/golang/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -63,6 +64,10 @@ type Extractor struct {
 	// versionFromBinary enables extracting the module version from the binary content.
 	// This operation is expensive because it uses a regexp to parse the binary content.
 	versionFromContent bool
+
+	// extractDependencyRelations enables reconstructing the inter-module dependency graph
+	// and populating ParentIDs on packages.
+	extractDependencyRelations bool
 }
 
 // New returns a Go binary extractor.
@@ -70,6 +75,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
 	e.versionFromContent = specific.GetVersionFromContent()
+	e.extractDependencyRelations = specific.GetExtractDependencyRelations()
 	return e, nil
 }
 
@@ -144,6 +150,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 		pkg = append(pkg, mainPkg)
 	}
+	if e.extractDependencyRelations {
+		edges, err := ExtractDependencyGraph(readerAt, binfo)
+		if err != nil {
+			log.Warnf("failed to extract dependency graph from Go binary (%s): %v", input.Path, err)
+		} else {
+			if err := LinkParentIDs(edges, pkg); err != nil {
+				log.Warnf("failed to link dependency graph for Go binary (%s): %v", input.Path, err)
+			}
+		}
+	}
 	e.reportFileExtracted(input.Path, input.Info, nil)
 	return inventory.Inventory{Packages: pkg}, nil
 }
@@ -191,18 +207,17 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 	}
 
 	for _, dep := range binfo.Deps {
-		pkgName, pkgVers := parseDependency(dep)
-		if pkgName == "" {
-			continue
-		}
-
-		pkgVers = strings.TrimPrefix(pkgVers, "v")
-
 		pkg := &extractor.Package{
-			Name:     pkgName,
-			Version:  pkgVers,
+			Name:     dep.Path,
+			Version:  strings.TrimPrefix(dep.Version, "v"),
 			PURLType: purl.TypeGolang,
 			Location: extractor.LocationFromPath(filename),
+		}
+		if dep.Replace != nil {
+			gocommon.ApplyReplacement(pkg, dep.Replace.Path, dep.Replace.Version)
+		}
+		if pkg.Name == "" {
+			continue
 		}
 		res = append(res, pkg)
 	}
@@ -223,17 +238,6 @@ func validateGoVersion(vers string) (string, error) {
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")
 	return res, nil
-}
-
-func parseDependency(d *debug.Module) (string, string) {
-	dep := d
-	// Handle module replacement, but don't replace module if the replacement
-	// doesn't have a package name.
-	if dep.Replace != nil && dep.Replace.Path != "" {
-		dep = dep.Replace
-	}
-
-	return dep.Path, dep.Version
 }
 
 func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Package {
@@ -269,4 +273,35 @@ func extractVersionFromConent(reader io.Reader) string {
 
 	version = strings.TrimPrefix(version, "v")
 	return version
+}
+
+// LinkParentIDs creates parent-child dependency relationships on the target packages.
+func LinkParentIDs(edges []ModuleEdge, pkgs []*extractor.Package) error {
+	pkgsByName := make(map[string]*extractor.Package, len(pkgs))
+	for _, p := range pkgs {
+		pkgsByName[p.Name] = p
+	}
+
+	var unlinked int
+	for _, edge := range edges {
+		fromPkg := pkgsByName[edge.Module]
+		toPkg := pkgsByName[edge.DependsOn]
+		if fromPkg == nil || toPkg == nil || fromPkg == toPkg {
+			unlinked++
+			log.Debugf("unable to link dependency edge (%s -> %s): package not found in inventory", edge.Module, edge.DependsOn)
+			continue
+		}
+		parentID, err := fromPkg.RequireID()
+		if err != nil {
+			return fmt.Errorf("failed to generate ID for %s: %w", fromPkg.Name, err)
+		}
+		if toPkg.ParentIDs == nil {
+			toPkg.ParentIDs = make(map[string]bool)
+		}
+		toPkg.ParentIDs[parentID] = true
+	}
+	if unlinked > 0 {
+		log.Warnf("could not link %d dependency edge(s) out of %d: package not found in inventory", unlinked, len(edges))
+	}
+	return nil
 }
