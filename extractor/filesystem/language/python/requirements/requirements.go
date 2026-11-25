@@ -42,6 +42,8 @@ const (
 
 	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
 	noLimitMaxFileSizeBytes = int64(0)
+
+	utf8BOM = "\xef\xbb\xbf"
 )
 
 var (
@@ -201,7 +203,16 @@ func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package,
 func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQueue, error) {
 	var pkgs []*extractor.Package
 	var extraPaths pathQueue
-	s := bufio.NewScanner(reader)
+	// Pip accepts UTF-8 encoded requirements files with a leading byte order
+	// mark. Strip it before parsing so it doesn't become part of the first
+	// requirement's package name.
+	br := bufio.NewReader(reader)
+	if prefix, _ := br.Peek(len(utf8BOM)); string(prefix) == utf8BOM {
+		if _, err := br.Discard(len(utf8BOM)); err != nil {
+			return nil, nil, err
+		}
+	}
+	s := bufio.NewScanner(br)
 	lineNum := 0
 	for s.Scan() {
 		lineNum++
