@@ -36,12 +36,16 @@ import (
 	"net/textproto"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 // FTPValidator validates an URL credential with an ftp schema.
-type FTPValidator struct{}
+type FTPValidator struct {
+	// DialContext optionally overrides destination filtering for trusted callers.
+	DialContext func(context.Context, string, string) (net.Conn, error)
+}
 
 // Validate attempts to connect and authenticate to the FTP server.
 func (f *FTPValidator) Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error) {
@@ -54,7 +58,11 @@ func (f *FTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validati
 	}
 
 	// Establish the connection.
-	conn, err := ftpDial(ctx, u.Host)
+	dial := f.DialContext
+	if dial == nil {
+		dial = dialPublicContext
+	}
+	conn, err := ftpDial(ctx, u.Host, dial)
 	if err != nil {
 		return veles.ValidationFailed, err
 	}
@@ -71,9 +79,14 @@ func (f *FTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validati
 
 // ftpDial connects to the address using the provided context and establishes a textproto connection.
 // It reads the initial 220 greeting from the server.
-func ftpDial(ctx context.Context, addr string) (*textproto.Conn, error) {
-	rawConn, err := (&net.Dialer{}).DialContext(ctx, "tcp", addr)
+func ftpDial(ctx context.Context, addr string, dial func(context.Context, string, string) (net.Conn, error)) (*textproto.Conn, error) {
+	rawConn, err := dial(ctx, "tcp", addr)
 	if err != nil {
+		return nil, err
+	}
+	// Bound protocol reads as well as connection establishment.
+	if err := setDeadline(ctx, rawConn); err != nil {
+		rawConn.Close()
 		return nil, err
 	}
 
@@ -85,6 +98,25 @@ func ftpDial(ctx context.Context, addr string) (*textproto.Conn, error) {
 	}
 
 	return tp, nil
+}
+
+// dialPublicContext is shared by FTP and SFTP.
+func dialPublicContext(ctx context.Context, network, address string) (net.Conn, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	// safeurl's net.Dialer.Control checks the numeric address immediately before
+	// connecting. Reuse that dialer for raw TCP protocols rather than checking a
+	// hostname separately and allowing DNS rebinding between check and connect.
+	return publicTransport.DialContext(ctx, network, address)
+}
+
+// setDeadline bounds protocol operations for both FTP and SFTP.
+func setDeadline(ctx context.Context, conn net.Conn) error {
+	deadline := time.Now().Add(10 * time.Second)
+	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
+		deadline = d
+	}
+	return conn.SetDeadline(deadline)
 }
 
 func ftpLogin(tp *textproto.Conn, user, pass string) error {
