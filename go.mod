@@ -4,12 +4,12 @@ go 1.27.1
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.14
-	deps.dev/api/v3 v3.0.0-20261013100046-7bac2db56a63
-	deps.dev/api/v3alpha v0.0.0-20261013100046-7bac2db56a63
-	deps.dev/util/maven v0.0.0-20261013100046-7bac2db56a63
-	deps.dev/util/pypi v0.0.0-20260706020948-bbe0844886bc
-	deps.dev/util/resolve v0.0.0-20260914234406-fe0055f3c598
-	deps.dev/util/semver v0.0.0-20260928000106-0e158e8db197
+	deps.dev/api/v3 v3.0.0-20261124225914-319c5d33029f
+	deps.dev/api/v3alpha v0.0.0-20261124225914-319c5d33029f
+	deps.dev/util/maven v0.0.0-20261124225914-319c5d33029f
+	deps.dev/util/pypi v0.0.0-20261124225914-319c5d33029f
+	deps.dev/util/resolve v0.0.0-20261124225914-319c5d33029f
+	deps.dev/util/semver v0.0.0-20261124225914-319c5d33029f
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.12.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5

@@ -36,6 +36,36 @@ func TestFromArtifactID(t *testing.T) {
 			artifactID: "spring-web",
 			want:       "org.springframework",
 		},
+		{
+			name:       "spring_core",
+			artifactID: "spring-core",
+			want:       "org.springframework",
+		},
+		{
+			name:       "spring_ldap_core",
+			artifactID: "spring-ldap-core",
+			want:       "org.springframework.ldap",
+		},
+		{
+			name:       "derby",
+			artifactID: "derby",
+			want:       "org.apache.derby",
+		},
+		{
+			name:       "libthrift",
+			artifactID: "libthrift",
+			want:       "org.apache.thrift",
+		},
+		{
+			name:       "lz4_java",
+			artifactID: "lz4-java",
+			want:       "org.lz4",
+		},
+		{
+			name:       "snappy_java",
+			artifactID: "snappy-java",
+			want:       "org.xerial.snappy",
+		},
 	}
 
 	for _, tt := range tests {

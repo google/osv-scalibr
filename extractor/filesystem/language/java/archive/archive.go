@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/groupid"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
@@ -299,6 +300,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 
 			key := project.ProjectKey
+			if key.GroupID.ContainsProperty() || key.ArtifactID.ContainsProperty() {
+				continue // Skip, we can't determine the full package name.
+			}
+			if key.Version.ContainsProperty() {
+				key.Version = "" // Strip but leave the package, at least we have the name.
+			}
 			descriptorLoc := location.FromPath(input.Path)
 			packagePom = append(packagePom, &extractor.Package{
 				Name:     key.Name(),
@@ -373,6 +380,13 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		}
 	}
 
+	// Fallback to filename if the package is versionless, but only if only one manifest was found.
+	// Otherwise, we may be attributing the version of the main package to a bundled dependency.
+	if len(packagePom) == 1 && packagePom[0].Version == "" && e.extractFromFilename {
+		if p := ParseFilename(input.Path); p != nil {
+			packagePom[0].Version = p.Version
+		}
+	}
 	pkgs = append(pkgs, packagePom...)
 
 	// If there is no pom.properties, try combining MANIFEST.MF and filename.
@@ -402,6 +416,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 					groupID = metadata.GroupID
 					packageManifest = nil
 				}
+			}
+			// Override with a known group ID when MANIFEST.MF omits a usable
+			// artifact ID (e.g. multi-word Bundle-Name or per-entry Name headers).
+			if newGroupID := groupid.FromArtifactID(p.ArtifactID); newGroupID != "" {
+				groupID = newGroupID
+				packageManifest = nil
 			}
 			packageFilename = append(packageFilename, &extractor.Package{
 				Name:     fmt.Sprintf("%s:%s", groupID, p.ArtifactID),
