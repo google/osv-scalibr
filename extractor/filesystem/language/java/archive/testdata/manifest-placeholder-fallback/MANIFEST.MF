@@ -1,0 +1,6 @@
+Bundle-SymbolicName: com.example.${module}
+Extension-Name: com.example
+Implementation-Title: example-${platform}
+Bundle-Name: example-lib
+Implementation-Version: ${project.version}
+Bundle-Version: 1.2.3

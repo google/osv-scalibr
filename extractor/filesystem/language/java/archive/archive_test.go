@@ -660,6 +660,142 @@ func TestExtract(t *testing.T) {
 				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/derby-10.14.2.0.jar")),
 			}},
 		},
+		{
+			name:            "pom_properties_with_placeholder_artifact_falls_back_to_filename",
+			path:            "example-1.2.3.jar",
+			contentPath:     filepath.FromSlash("testdata/pom-placeholder-artifact/pom.properties"),
+			extractFilename: true,
+			want: []*extractor.Package{{
+				Name:     "example:example",
+				Version:  "1.2.3",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "example", GroupID: "example"},
+				Location: extractor.LocationFromPath("example-1.2.3.jar"),
+			}},
+		},
+		{
+			name:            "pom_properties_with_placeholder_version_falls_back_to_filename",
+			path:            "example-lib-2.0.0.jar",
+			contentPath:     filepath.FromSlash("testdata/pom-placeholder-version/pom.properties"),
+			extractFilename: true,
+			want: []*extractor.Package{{
+				Name:     "com.example:example-lib",
+				Version:  "2.0.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "example-lib", GroupID: "com.example"},
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{Path: "example-lib-2.0.0.jar"}},
+					Related:    []location.Location{location.FromPath(filepath.FromSlash("example-lib-2.0.0.jar/pom.properties"))},
+				},
+			}},
+		},
+		{
+			name:              "pom_xml_with_placeholder_version_emits_versionless_when_filename_disabled",
+			path:              "example-lib-2.0.0.jar",
+			contentPath:       filepath.FromSlash("testdata/pom-xml-placeholder-version/pom.xml"),
+			extractFromPomXML: true,
+			want: []*extractor.Package{{
+				Name:     "com.example:example-lib",
+				Version:  "",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
+					ArtifactID:   "example-lib",
+					GroupID:      "com.example",
+					Dependencies: []maven.Dependency{},
+					Parent:       &maven.ProjectKey{},
+				},
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{Path: "example-lib-2.0.0.jar"}},
+					Related:    []location.Location{location.FromPath(filepath.FromSlash("example-lib-2.0.0.jar/pom.xml"))},
+				},
+			}},
+		},
+		{
+			name:              "pom_xml_with_placeholder_version_falls_back_to_filename",
+			path:              "example-lib-2.0.0.jar",
+			contentPath:       filepath.FromSlash("testdata/pom-xml-placeholder-version/pom.xml"),
+			extractFromPomXML: true,
+			extractFilename:   true,
+			want: []*extractor.Package{{
+				Name:     "com.example:example-lib",
+				Version:  "2.0.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
+					ArtifactID:   "example-lib",
+					GroupID:      "com.example",
+					Dependencies: []maven.Dependency{},
+					Parent:       &maven.ProjectKey{},
+				},
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{Path: "example-lib-2.0.0.jar"}},
+					Related:    []location.Location{location.FromPath(filepath.FromSlash("example-lib-2.0.0.jar/pom.xml"))},
+				},
+			}},
+		},
+		{
+			name:              "pom_xml_with_placeholder_artifact_ignored_when_filename_disabled",
+			path:              "example-1.2.3.jar",
+			contentPath:       filepath.FromSlash("testdata/pom-xml-placeholder-artifact/pom.xml"),
+			extractFromPomXML: true,
+			want:              []*extractor.Package{},
+		},
+		{
+			name:              "pom_xml_with_placeholder_artifact_falls_back_to_filename",
+			path:              "example-1.2.3.jar",
+			contentPath:       filepath.FromSlash("testdata/pom-xml-placeholder-artifact/pom.xml"),
+			extractFromPomXML: true,
+			extractFilename:   true,
+			want: []*extractor.Package{{
+				Name:     "example:example",
+				Version:  "1.2.3",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "example", GroupID: "example"},
+				Location: extractor.LocationFromPath("example-1.2.3.jar"),
+			}},
+		},
+		{
+			name:        "manifest_with_placeholder_version_emits_versionless_when_filename_disabled",
+			path:        "placeholder.jar",
+			contentPath: filepath.FromSlash("testdata/manifest-placeholder/MANIFEST.MF"),
+			want: []*extractor.Package{{
+				Name:     "com.example.foo:foo",
+				Version:  "",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "foo", GroupID: "com.example.foo"},
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{Path: "placeholder.jar"}},
+					Related:    []location.Location{location.FromPath(filepath.FromSlash("placeholder.jar/MANIFEST.MF"))},
+				},
+			}},
+		},
+		{
+			name:            "manifest_with_placeholder_version_combines_with_filename",
+			path:            "foo-2.0.0.jar",
+			contentPath:     filepath.FromSlash("testdata/manifest-placeholder/MANIFEST.MF"),
+			extractFilename: true,
+			want: []*extractor.Package{{
+				Name:     "com.example.foo:foo",
+				Version:  "2.0.0",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "foo", GroupID: "com.example.foo"},
+				Location: extractor.LocationFromPath("foo-2.0.0.jar"),
+			}},
+		},
+		{
+			name:        "manifest_with_placeholder_headers_falls_back_to_next_valid_headers",
+			path:        "placeholder-fallback.jar",
+			contentPath: filepath.FromSlash("testdata/manifest-placeholder-fallback/MANIFEST.MF"),
+			want: []*extractor.Package{{
+				Name:     "com.example:example-lib",
+				Version:  "1.2.3",
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{ArtifactID: "example-lib", GroupID: "com.example"},
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{Path: "placeholder-fallback.jar"}},
+					Related:    []location.Location{location.FromPath(filepath.FromSlash("placeholder-fallback.jar/MANIFEST.MF"))},
+				},
+			}},
+		},
 	}
 
 	for _, tt := range tests {

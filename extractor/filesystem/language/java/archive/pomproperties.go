@@ -32,7 +32,17 @@ type PomProps struct {
 
 // valid returns true if p is a valid pom property.
 func (p PomProps) valid() bool {
-	return p.GroupID != "" && !strings.Contains(p.GroupID, " ") && p.ArtifactID != "" && !strings.Contains(p.ArtifactID, " ") && p.Version != "" && !strings.Contains(p.Version, " ")
+	return validPomField(p.GroupID) && validPomField(p.ArtifactID)
+}
+
+func validPomField(s string) bool {
+	return s != "" && !strings.Contains(s, " ") && !containsPlaceholder(s)
+}
+
+// containsPlaceholder checks if s contains an Maven ${...} placeholder.
+func containsPlaceholder(s string) bool {
+	i := strings.Index(s, "${")
+	return i != -1 && strings.Contains(s[i+2:], "}")
 }
 
 func parsePomProps(f *zip.File) (PomProps, error) {
@@ -59,7 +69,9 @@ func parsePomProps(f *zip.File) (PomProps, error) {
 		case "artifactId":
 			p.ArtifactID = value
 		case "version":
-			p.Version = value
+			if validPomField(value) {
+				p.Version = value
+			}
 		}
 	}
 	if s.Err() != nil {
