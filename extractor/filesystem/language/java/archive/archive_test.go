@@ -796,6 +796,17 @@ func TestExtract(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name: "pom_properties_outside_meta_inf_maven_ignored",
+			path: filepath.FromSlash("testdata/pom_outside_meta_inf.jar"),
+			want: []*extractor.Package{},
+		},
+		{
+			name:              "pom_xml_outside_meta_inf_maven_ignored",
+			path:              filepath.FromSlash("testdata/pom_outside_meta_inf.jar"),
+			extractFromPomXML: true,
+			want:              []*extractor.Package{},
+		},
 	}
 
 	for _, tt := range tests {

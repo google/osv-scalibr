@@ -264,7 +264,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 
 		path := filepath.Join(input.Path, file.Name)
 		switch {
-		case !e.extractFromPomXML && filepath.Base(file.Name) == "pom.properties":
+		case !e.extractFromPomXML && isPomFile(file.Name, "pom.properties"):
 			pp, err := parsePomProps(file)
 			if err != nil {
 				log.Errorf("%s failed to extract from pom.properties at %q: %v", e.Name(), path, err)
@@ -289,7 +289,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				})
 			}
 
-		case e.extractFromPomXML && filepath.Base(file.Name) == "pom.xml":
+		case e.extractFromPomXML && isPomFile(file.Name, "pom.xml"):
 			log.Debugf("Parsing pom.xml file %q", path)
 
 			project, err := ParsePomXML(file)
@@ -493,4 +493,14 @@ func IsArchive(path string) bool {
 
 func isManifest(path string) bool {
 	return strings.ToLower(filepath.Base(path)) == "manifest.mf"
+}
+
+// isPomFile checks whether path is a Maven POM file (pom.properties or pom.xml).
+func isPomFile(path, base string) bool {
+	if filepath.Base(path) != base {
+		return false
+	}
+	slash := filepath.ToSlash(path)
+	// These filenames may appear in other locations. Only META-INF contains metadata in scope.
+	return strings.HasPrefix(slash, "META-INF/maven/") || !strings.Contains(slash, "/")
 }
