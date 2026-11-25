@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/plugin/config"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 const (
@@ -170,6 +171,30 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 
 	return nil
+}
+
+// DownloadDatabases downloads the databases for the given ecosystems
+func (e *Enricher) DownloadDatabases(ctx context.Context, ecos []osvconstants.Ecosystem) error {
+	dbs, err := newlocalMatcher(
+		e.localPath,
+		e.download,
+		e.zippedDBRemoteHost,
+		e.httpClient,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	errs := []error{}
+
+	for _, eco := range slices.Compact(slices.Sorted(slices.Values(ecos))) {
+		if _, err := dbs.zipDBFor(eco).fetchZip(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("could not download db for %s ecosystem: %w", eco, err))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 // dedupPackageVulns deduplicate package vulnerabilities that have the same pkg and vulnID
