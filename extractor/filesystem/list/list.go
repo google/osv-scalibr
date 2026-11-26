@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerinstalled"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
@@ -379,6 +380,10 @@ var (
 	}
 	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {protoCfg(composerlock.New)}}
+	// PHPArtifact extractors for PHP.
+	PHPArtifact = InitMap{
+		composerinstalled.Name: {protoCfg(composerinstalled.New)},
+	}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {protoCfg(packageresolved.New)},
@@ -626,6 +631,7 @@ var (
 		JuliaArtifact,
 		RubyArtifact,
 		HaskellArtifact,
+		PHPArtifact,
 		ZigArtifact,
 	)
 
@@ -664,7 +670,7 @@ var (
 		"r":          vals(RSource),
 		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
-		"php":        vals(PHPSource),
+		"php":        vals(concat(PHPSource, PHPArtifact)),
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),

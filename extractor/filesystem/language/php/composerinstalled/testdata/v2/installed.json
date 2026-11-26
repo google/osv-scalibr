@@ -1,0 +1,24 @@
+{
+  "packages": [
+    {
+      "name": "symfony/console",
+      "version": "v7.3.4",
+      "dist": {
+        "reference": "d3a5e2f0bcdb73f3779467bfb3ae4e8e83c2e0e3"
+      },
+      "install-path": "../symfony/console"
+    },
+    {
+      "name": "phpunit/phpunit",
+      "version": "12.3.8",
+      "dist": {
+        "reference": "12.3.8"
+      },
+      "install-path": "../phpunit/phpunit"
+    }
+  ],
+  "dev": true,
+  "dev-package-names": [
+    "phpunit/phpunit"
+  ]
+}
