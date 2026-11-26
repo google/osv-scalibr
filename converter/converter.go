@@ -79,11 +79,16 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			componentType = cyclonedx.ComponentTypeApplication
 		}
 
+		id, err := extractor.GetIDGenerator().GenerateID(c.ComponentName)
+		if err != nil {
+			log.Warnf("Failed to generate ID for component %q: %v", c.ComponentName, err)
+			id = uuid.New().String()
+		}
 		bom.Metadata.Component = &cyclonedx.Component{
 			Name:    c.ComponentName,
 			Version: c.ComponentVersion,
 			Type:    componentType,
-			BOMRef:  uuid.New().String(),
+			BOMRef:  id,
 		}
 	}
 	if len(c.Authors) > 0 {

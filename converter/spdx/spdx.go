@@ -58,12 +58,24 @@ type Config struct {
 	Creators          []common.Creator
 }
 
+// generateID returns an ID for name from the package ID generator, or a random
+// UUID if that fails. Characters that SPDX IDs don't allow are replaced, which
+// also keeps the ID safe in a URI.
+func generateID(name string) string {
+	id, err := extractor.GetIDGenerator().GenerateID(name)
+	if err != nil {
+		log.Warnf("Failed to generate ID for %q: %v", name, err)
+		return uuid.New().String()
+	}
+	return replaceSPDXIDInvalidChars(id)
+}
+
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
 func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	packages := make([]*v2_3.Package, 0, len(i.Packages)+1)
 
 	// Add a main package that contains all other top-level packages.
-	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
+	mainPackageID := SPDXRefPrefix + "Package-main-" + generateID("main")
 	packages = append(packages, &v2_3.Package{
 		PackageName:           "main",
 		PackageSPDXIdentifier: common.ElementID(mainPackageID),
@@ -149,7 +161,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	}
 	namespace := c.DocumentNamespace
 	if namespace == "" {
-		namespace = "https://spdx.google/" + uuid.New().String()
+		namespace = "https://spdx.google/" + generateID(name)
 	}
 	creators := []common.Creator{
 		{

@@ -194,3 +194,19 @@ func TestToCDX(t *testing.T) {
 		})
 	}
 }
+
+// nameIDGenerator generates "id-<name>" IDs.
+type nameIDGenerator struct{}
+
+func (nameIDGenerator) GenerateID(name string) (string, error) { return "id-" + name, nil }
+
+func TestToCDX_RootBOMRefFromIDGenerator(t *testing.T) {
+	orig := extractor.GetIDGenerator()
+	t.Cleanup(func() { extractor.SetIDGenerator(orig) })
+	extractor.SetIDGenerator(nameIDGenerator{})
+
+	got := converter.ToCDX(inventory.Inventory{}, converter.CDXConfig{ComponentName: "sbom-1"})
+	if want := "id-sbom-1"; got.Metadata.Component.BOMRef != want {
+		t.Errorf("converter.ToCDX() root bom-ref = %q, want %q", got.Metadata.Component.BOMRef, want)
+	}
+}
