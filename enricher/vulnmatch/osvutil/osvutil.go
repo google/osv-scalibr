@@ -34,6 +34,7 @@ import (
 var (
 	pythonNormalizationRegex = regexp.MustCompile(`[-_.]+`)
 	goVersionSuffixRegexp    = regexp.MustCompile(`(v[0-9]+)`)
+	brewRevisionSuffixRegexp = regexp.MustCompile(`_[0-9]+$`)
 )
 
 // NormalizedPackage holds the OSV-compatible package metadata.
@@ -220,6 +221,12 @@ func version(pkg *extractor.Package, name string, eco osvecosystem.Parsed) strin
 	// read as 0 and already-fixed advisories are reported as unfixed.
 	if m, ok := pkg.Metadata.(*rpmmetadata.Metadata); ok && m.Epoch > 0 && ecosystemEncodesEpoch(eco.String()) {
 		return strconv.Itoa(m.Epoch) + ":" + version
+	}
+	// Homebrew appends a packaging revision ("_N") to the upstream version
+	// (e.g. "1.37.0_2"). Strip it when querying the upstream Git repository,
+	// whose tags only know the upstream version.
+	if pkg.PURL() != nil && pkg.PURL().Type == purl.TypeBrew && pkg.SourceCode != nil {
+		return brewRevisionSuffixRegexp.ReplaceAllLiteralString(version, "")
 	}
 	return version
 }

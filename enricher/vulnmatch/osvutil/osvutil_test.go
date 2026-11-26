@@ -193,6 +193,33 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "Homebrew revision suffix stripped for GIT query",
+			pkg: &extractor.Package{
+				PURLType:   purl.TypeBrew,
+				Name:       "aria2",
+				Version:    "1.37.0_2",
+				SourceCode: &extractor.SourceCodeIdentifier{Repo: "https://github.com/aria2/aria2"},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "https://github.com/aria2/aria2",
+				Ecosystem: osvecosystem.MustParse("GIT"),
+				Version:   "1.37.0",
+			},
+		},
+		{
+			name: "Homebrew version without source repo keeps revision suffix",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeBrew,
+				Name:     "aria2",
+				Version:  "1.37.0_2",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "aria2",
+				Ecosystem: osvecosystem.MustParse("GIT"),
+				Version:   "1.37.0_2",
+			},
+		},
+		{
 			name: "GIT repo (normalize only github/gitlab)",
 			pkg: &extractor.Package{
 				PURLType:   "git",
