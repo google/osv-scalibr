@@ -15,6 +15,7 @@
 package wheelegg_test
 
 import (
+	"archive/zip"
 	"bytes"
 	"errors"
 	"io/fs"
@@ -390,6 +391,58 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
+	}
+}
+
+func TestExtractWheelWithEmbeddedEgg(t *testing.T) {
+	egg, err := os.ReadFile("testdata/monotonic-1.6-py3.10.egg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wheel bytes.Buffer
+	zw := zip.NewWriter(&wheel)
+	for _, member := range []struct {
+		name string
+		data []byte
+	}{
+		{"example/tests/fixture.egg", egg},
+		{"example-1.0.dist-info/METADATA", []byte("Metadata-Version: 2.1\nName: example\nVersion: 1.0\n")},
+	} {
+		w, err := zw.Create(member.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(member.data); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	path := "example-1.0-py3-none-any.whl"
+	input := &filesystem.ScanInput{
+		Path:   path,
+		Info:   fakefs.FakeFileInfo{FileName: path, FileSize: int64(wheel.Len())},
+		Reader: bytes.NewReader(wheel.Bytes()),
+	}
+	e, err := wheelegg.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract(%s): %v", path, err)
+	}
+	if len(got.Packages) != 2 {
+		t.Fatalf("Extract(%s) packages = %d, want outer wheel and embedded egg", path, len(got.Packages))
+	}
+	packages := make(map[string]string, len(got.Packages))
+	for _, pkg := range got.Packages {
+		packages[pkg.Name] = pkg.Version
+	}
+	if packages["example"] != "1.0" || packages["monotonic"] != "1.6" {
+		t.Errorf("Extract(%s) package name/version = %v, want example@1.0 and monotonic@1.6", path, packages)
 	}
 }
 
