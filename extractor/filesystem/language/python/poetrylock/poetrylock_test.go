@@ -178,6 +178,20 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/source-git.lock", 2),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "cd66602cd29f61a2d2e7fb995fef1e61708c034d",
+						Repo:   "https://github.com/dzshn/ike",
+					},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "requests",
+					Version:  "2.32.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/source-git.lock", 17),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "0e322af87745eff34caffe4df68456ebc20d9068",
+						Repo:   "https://github.com/psf/requests",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},

@@ -28,7 +28,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/commitextractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
