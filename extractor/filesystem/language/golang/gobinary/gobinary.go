@@ -235,6 +235,14 @@ func validateGoVersion(vers string) (string, error) {
 	// 'go1.20-pre3 +a813be86df' -> 'go1.20-pre3')
 	goVersion, _, _ := strings.Cut(vers, " ")
 
+	// The Go linker appends an experiment suffix to release versions built
+	// with non-default GOEXPERIMENTs (e.g. go1.26.1-X:nodwarf5). It is build
+	// metadata rather than part of the release version, so drop it to avoid
+	// matching advisories already fixed in the underlying release.
+	if release, _, found := strings.Cut(goVersion, "-X:"); found {
+		goVersion = release
+	}
+
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")
 	return res, nil
