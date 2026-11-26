@@ -18,6 +18,7 @@ package wheelegg
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -45,6 +46,7 @@ const (
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 100 * units.MiB
+	maxNestedEggDepth       = 3
 )
 
 // Extractor extracts python packages from wheel/egg files.
@@ -179,6 +181,10 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 	if err != nil {
 		return nil, fmt.Errorf("zip.NewReader: %w", err)
 	}
+	return e.extractZipFiles(ctx, zr, input, 0)
+}
+
+func (e Extractor) extractZipFiles(ctx context.Context, zr *zip.Reader, input *filesystem.ScanInput, depth int) ([]*extractor.Package, error) {
 	pkgs := []*extractor.Package{}
 	for _, f := range zr.File {
 		if ctx.Err() != nil {
@@ -188,6 +194,42 @@ func (e Extractor) extractZip(ctx context.Context, input *filesystem.ScanInput) 
 		if !e.FileRequired(simplefileapi.New(f.Name, f.FileInfo())) {
 			continue
 		}
+
+		// Some wheels bundle .egg files as test fixtures. Extract them as
+		// nested archives instead of parsing their binary ZIP headers as
+		// package metadata; one malformed fixture must not abort the wheel's
+		// own .dist-info metadata extraction.
+		if strings.HasSuffix(f.Name, ".egg") && depth < maxNestedEggDepth {
+			r, err := f.Open()
+			if err != nil {
+				return pkgs, fmt.Errorf("f.Open(%s): %w", f.Name, err)
+			}
+			limit := e.maxFileSizeBytes
+			if limit <= 0 {
+				limit = defaultMaxFileSizeBytes
+			}
+			data, readErr := io.ReadAll(io.LimitReader(r, limit+1))
+			closeErr := r.Close()
+			if readErr != nil {
+				return pkgs, fmt.Errorf("read nested egg %s: %w", f.Name, readErr)
+			}
+			if closeErr != nil {
+				return pkgs, fmt.Errorf("close nested egg %s: %w", f.Name, closeErr)
+			}
+			if int64(len(data)) > limit {
+				return pkgs, fmt.Errorf("%w: %s nested egg exceeds %d bytes at %q",
+					filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), limit, f.Name)
+			}
+			if nested, err := zip.NewReader(bytes.NewReader(data), int64(len(data))); err == nil {
+				nestedPkgs, err := e.extractZipFiles(ctx, nested, input, depth+1)
+				if err != nil {
+					return pkgs, err
+				}
+				pkgs = append(pkgs, nestedPkgs...)
+				continue
+			}
+		}
+
 		p, err := e.openAndExtract(f, input)
 		if err != nil {
 			return pkgs, err
