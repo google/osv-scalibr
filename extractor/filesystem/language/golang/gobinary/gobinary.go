@@ -80,16 +80,16 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the specified file is marked executable.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if !filesystem.IsInterestingExecutable(api) {
 		return false
 	}
@@ -108,7 +108,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+func (e *Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
 	if e.Stats == nil {
 		return
 	}
@@ -120,7 +120,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract returns a list of installed third party dependencies in a Go binary.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var readerAt io.ReaderAt
 	if fileWithReaderAt, ok := input.Reader.(io.ReaderAt); ok {
 		readerAt = fileWithReaderAt
@@ -164,7 +164,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkg}, nil
 }
 
-func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
+func (e *Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
 	if e.Stats == nil {
 		return
 	}

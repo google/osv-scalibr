@@ -66,13 +66,13 @@ type Annotator struct{}
 func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
-func (Annotator) Name() string { return "misc/npm-source" }
+func (*Annotator) Name() string { return "misc/npm-source" }
 
 // Version of the annotator.
-func (Annotator) Version() int { return 1 }
+func (*Annotator) Version() int { return 1 }
 
 // Requirements of the annotator.
-func (Annotator) Requirements() *plugin.Capabilities {
+func (*Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 

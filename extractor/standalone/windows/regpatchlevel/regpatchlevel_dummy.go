@@ -38,13 +38,13 @@ type Extractor struct{}
 func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 

@@ -65,13 +65,13 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
@@ -83,7 +83,7 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // Extract returns a list of secret mariadb credentials
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	i := inventory.Inventory{}
 	secrets, err := e.includeFile(ctx, input, input.Path)
 	if err != nil {
