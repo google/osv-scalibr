@@ -26,6 +26,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -97,8 +98,13 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 
 	comps := make([]cyclonedx.Component, 0, len(i.Packages))
 	for _, pkg := range i.Packages {
+		id, err := pkg.GetIDOrGenerate()
+		if err != nil {
+			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
+			continue
+		}
 		comp := cyclonedx.Component{
-			BOMRef:  uuid.New().String(),
+			BOMRef:  id,
 			Type:    cyclonedx.ComponentTypeLibrary,
 			Name:    pkg.Name,
 			Version: pkg.Version,

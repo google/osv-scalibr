@@ -138,6 +138,7 @@ func TestToCDX(t *testing.T) {
 			desc: "Package_without_component_name",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
+					ID:       "pkg-1",
 					Name:     "software",
 					Version:  "1.2.3",
 					PURLType: purl.TypePyPi,
@@ -164,7 +165,7 @@ func TestToCDX(t *testing.T) {
 				},
 				Components: new([]cyclonedx.Component{
 					{
-						BOMRef:     "eb9d18a4-4784-445d-87f3-c67cf22746e9",
+						BOMRef:     "pkg-1",
 						Type:       "library",
 						Name:       "software",
 						Version:    "1.2.3",
