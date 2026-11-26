@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/converter"
@@ -1699,6 +1700,13 @@ func TestGetSourceCodePURL(t *testing.T) {
 				t.Errorf("GetSourceCodePURL(%q, %q) mismatch (-want +got):\n%s", tc.repoURL, tc.commit, diff)
 			}
 		})
+	}
+}
+
+func TestToSPDX23_Created(t *testing.T) {
+	got := converter.ToSPDX23(inventory.Inventory{}, spdx.Config{Created: time.Unix(1700000000, 0)})
+	if want := "2023-11-14T22:13:20Z"; got.CreationInfo.Created != want {
+		t.Errorf("converter.ToSPDX23() creation time = %q, want %q", got.CreationInfo.Created, want)
 	}
 }
 

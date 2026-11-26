@@ -17,6 +17,7 @@ package converter_test
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-cmp/cmp"
@@ -192,6 +193,13 @@ func TestToCDX(t *testing.T) {
 				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
+	}
+}
+
+func TestToCDX_Timestamp(t *testing.T) {
+	got := converter.ToCDX(inventory.Inventory{}, converter.CDXConfig{Timestamp: time.Unix(1700000000, 0)})
+	if want := "2023-11-14T22:13:20Z"; got.Metadata.Timestamp != want {
+		t.Errorf("converter.ToCDX() timestamp = %q, want %q", got.Metadata.Timestamp, want)
 	}
 }
 

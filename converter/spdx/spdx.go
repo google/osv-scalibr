@@ -56,6 +56,9 @@ type Config struct {
 	DocumentName      string
 	DocumentNamespace string
 	Creators          []common.Creator
+	// Created is written as the document's creation time. The zero value
+	// means the current time.
+	Created time.Time
 }
 
 // generateID returns an ID for name from the package ID generator, or a random
@@ -170,6 +173,10 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		},
 	}
 	creators = append(creators, c.Creators...)
+	created := c.Created
+	if created.IsZero() {
+		created = time.Now()
+	}
 	return &v2_3.Document{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
@@ -178,7 +185,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		DocumentNamespace: namespace,
 		CreationInfo: &v2_3.CreationInfo{
 			Creators: creators,
-			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+			Created:  created.UTC().Format("2006-01-02T15:04:05Z"),
 		},
 		Packages:      packages,
 		Files:         files,

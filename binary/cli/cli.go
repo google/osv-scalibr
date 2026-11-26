@@ -21,7 +21,9 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gobwas/glob"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -143,6 +145,7 @@ type Flags struct {
 	SPDXDocumentNamespace string
 	SPDXCreators          string
 	DeterministicIDs      bool
+	SBOMTimestamp         string
 	CDXComponentName      string
 	CDXComponentType      string
 	CDXComponentVersion   string
@@ -201,6 +204,9 @@ func ValidateFlags(flags *Flags) error {
 	}
 	if err := validateOutput(flags.Output); err != nil {
 		return fmt.Errorf("--o %w", err)
+	}
+	if _, err := parseSBOMTimestamp(flags.SBOMTimestamp); err != nil {
+		return fmt.Errorf("--sbom-timestamp %w", err)
 	}
 	if err := validateExtractorOverride(flags.ExtractorOverride); err != nil {
 		return fmt.Errorf("--extractor-override: %w", err)
@@ -472,6 +478,7 @@ func (f *Flags) GetSPDXConfig() convspdx.Config {
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
 		Creators:          creators,
+		Created:           f.sbomTime(),
 	}
 }
 
@@ -487,7 +494,26 @@ func (f *Flags) GetCDXConfig() converter.CDXConfig {
 		ComponentType:    f.CDXComponentType,
 		ComponentVersion: f.CDXComponentVersion,
 		Authors:          authors,
+		Timestamp:        f.sbomTime(),
 	}
+}
+
+// sbomTime returns the SBOM creation time set by --sbom-timestamp, or the zero
+// time if it is unset.
+func (f *Flags) sbomTime() time.Time {
+	t, _ := parseSBOMTimestamp(f.SBOMTimestamp) // ValidateFlags rejects invalid values.
+	return t
+}
+
+func parseSBOMTimestamp(s string) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, nil
+	}
+	secs, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("must be a Unix timestamp in seconds: %w", err)
+	}
+	return time.Unix(secs, 0), nil
 }
 
 // WriteScanResults writes SCALIBR scan results to files specified by the CLI flags.

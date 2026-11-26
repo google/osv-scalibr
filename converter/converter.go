@@ -50,13 +50,20 @@ type CDXConfig struct {
 	ComponentVersion string
 	ComponentType    string
 	Authors          []string
+	// Timestamp is written as the BOM's creation time. The zero value means
+	// the current time.
+	Timestamp time.Time
 }
 
 // ToCDX converts the SCALIBR scan results into a CycloneDX document.
 func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
+	timestamp := c.Timestamp
+	if timestamp.IsZero() {
+		timestamp = time.Now()
+	}
 	bom := cyclonedx.NewBOM()
 	bom.Metadata = &cyclonedx.Metadata{
-		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		Timestamp: timestamp.UTC().Format("2006-01-02T15:04:05Z"),
 		Tools: &cyclonedx.ToolsChoice{
 			Components: &[]cyclonedx.Component{
 				{
