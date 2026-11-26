@@ -372,9 +372,10 @@ var (
 		dotnetpe.Name: {protoCfg(dotnetpe.New)},
 	}
 	// PHPSource extractors for PHP Source extractors.
-	PHPSource = InitMap{
+	PHPSource = InitMap{composerlock.Name: {protoCfg(composerlock.New)}}
+	// PHPArtifact extractors for PHP.
+	PHPArtifact = InitMap{
 		composerinstalled.Name: {protoCfg(composerinstalled.New)},
-		composerlock.Name:      {protoCfg(composerlock.New)},
 	}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
@@ -622,6 +623,7 @@ var (
 		JuliaArtifact,
 		RubyArtifact,
 		HaskellArtifact,
+		PHPArtifact,
 		ZigArtifact,
 	)
 
@@ -659,7 +661,7 @@ var (
 		"r":          vals(RSource),
 		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
-		"php":        vals(PHPSource),
+		"php":        vals(concat(PHPSource, PHPArtifact)),
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
