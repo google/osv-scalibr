@@ -131,7 +131,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 	fsys := input.FS
 	if fsys == nil && input.Root != "" {
-		fsys = scalibrfs.DirFS(input.Root)
+		fsys = scalibrfs.ConfinedDirFS(input.Root)
 		if c, ok := fsys.(io.Closer); ok {
 			defer func() { _ = c.Close() }()
 		}
