@@ -62,6 +62,9 @@ type asarNode struct {
 	Files  map[string]asarNode `json:"files"`
 	Offset string              `json:"offset"`
 	Size   int64               `json:"size"`
+	// Unpacked entries have no offset. Their bytes live next to the archive in
+	// app.asar.unpacked, where the package.json extractor picks them up.
+	Unpacked bool `json:"unpacked"`
 }
 
 // packageJSON holds the fields we need from a bundled package.json.
@@ -204,7 +207,10 @@ func (e Extractor) extractPackageJSONNode(
 	var pkgs []*extractor.Package
 
 	pjNode, ok := pkgNode.Files["package.json"]
-	if ok {
+	if ok && pjNode.Unpacked {
+		log.Debugf("%s: skipping unpacked package.json for %q in %q",
+			e.Name(), pkgName, asarPath)
+	} else if ok {
 		pj, err := readPackageJSON(ra, pjNode, dataOffset)
 		if err != nil {
 			log.Warnf("%s: reading package.json for %q in %q: %v",
