@@ -263,3 +263,50 @@ func TestToPath(t *testing.T) {
 		})
 	}
 }
+
+func TestIsOpaqueWhiteout(t *testing.T) {
+	testCases := []struct {
+		desc string
+		path string
+		want bool
+	}{
+		{
+			desc: "Empty_path",
+			path: "",
+			want: false,
+		},
+		{
+			desc: "Simple_file_path",
+			path: "file.txt",
+			want: false,
+		},
+		{
+			desc: "Regular_whiteout_path",
+			path: ".wh.file.txt",
+			want: false,
+		},
+		{
+			desc: "Opaque_whiteout_filename",
+			path: ".wh..wh..opq",
+			want: true,
+		},
+		{
+			desc: "Opaque_whiteout_in_directory",
+			path: "dir1/dir2/.wh..wh..opq",
+			want: true,
+		},
+		{
+			desc: "Opaque_whiteout_with_leading_slash",
+			path: "/etc/.wh..wh..opq",
+			want: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := whiteout.IsOpaqueWhiteout(tc.path)
+			if got != tc.want {
+				t.Errorf("IsOpaqueWhiteout(%q) = %v, want: %v", tc.path, got, tc.want)
+			}
+		})
+	}
+}

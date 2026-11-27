@@ -569,6 +569,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 	}
 
 	currentChainLayer := chainLayersToFill[0]
+	var opaqueDirsInThisLayer []string
 
 	for {
 		header, err := tarReader.Next()
@@ -616,6 +617,17 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		// If the base name is "." or "..", then skip it. For example, if the cleaned file path is
 		// "/foo/bar/.", then we should skip it since it references "/foo/bar".
 		if basename == "." || basename == ".." {
+			continue
+		}
+
+		// Check if the file is an opaque whiteout (.wh..wh..opq).
+		// In OCI image layer specification, an opaque whiteout indicates that all
+		// children of the directory in lower layers are hidden, but children in the current
+		// layer (regardless of order in tar) must not be removed.
+		if whiteout.IsOpaqueWhiteout(basename) {
+			opaqueDirPath := normalizePath("/" + dirname)
+			opaqueDirsInThisLayer = append(opaqueDirsInThisLayer, opaqueDirPath)
+			populateEmptyDirectoryNodes(path.Join(opaqueDirPath, "placeholder"), currentChainLayer.latestLayer.(*Layer), chainLayersToFill)
 			continue
 		}
 
@@ -672,6 +684,20 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithVirtualFile(chainLayersToFill, newVirtualFile)
 	}
+
+	// Apply all opaque whiteout directories discovered in this layer to all affected chain layers.
+	// Since chainLayersToFill are processed in backward order (latest layer first), recording
+	// opaqueDirs now ensures that subsequent lower layers (which are processed next) will have their
+	// children under these directories skipped, while preserving all files added in this layer.
+	for _, chainLayer := range chainLayersToFill {
+		if chainLayer.opaqueDirs == nil {
+			chainLayer.opaqueDirs = make(map[string]struct{})
+		}
+		for _, opaqueDir := range opaqueDirsInThisLayer {
+			chainLayer.opaqueDirs[opaqueDir] = struct{}{}
+		}
+	}
+
 	return nil
 }
 
@@ -824,21 +850,20 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 	for filePath != "" {
 		dirname := path.Dir(filePath)
-		if filePath == dirname {
-			break
+		if layer.opaqueDirs != nil {
+			if _, ok := layer.opaqueDirs[dirname]; ok {
+				return true
+			}
 		}
 
 		node, err := layer.fileNodeTree.Get(dirname, false)
-		if err != nil {
-			return false
-		}
-		if node == nil {
-			return false
-		}
-		if node.isWhiteout {
+		if err == nil && node != nil && node.isWhiteout {
 			return true
 		}
 
+		if filePath == dirname {
+			break
+		}
 		filePath = dirname
 	}
 	return false
