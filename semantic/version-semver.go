@@ -15,6 +15,8 @@
 package semantic
 
 import (
+	"fmt"
+	"math/big"
 	"strings"
 )
 
@@ -52,14 +54,25 @@ func compareBuildComponents(a, b string) int {
 	)
 }
 
+// convertNumericIdentifier parses a pre-release identifier that consists only of
+// digits. big.Int.SetString also accepts a leading sign, but an identifier such
+// as "-1" contains a hyphen, so SemVer treats it as alphanumeric.
+func convertNumericIdentifier(str string) (*big.Int, error) {
+	if str == "" || !isOnlyDigits(str) {
+		return nil, fmt.Errorf("%w: %s is not a numeric identifier", ErrInvalidVersion, str)
+	}
+
+	return convertToBigInt(str)
+}
+
 func compareSemverBuildComponents(a, b []string) int {
 	minComponentLength := min(len(a), len(b))
 
 	var compare int
 
 	for i := range minComponentLength {
-		ai, aErr := convertToBigInt(a[i])
-		bi, bErr := convertToBigInt(b[i])
+		ai, aErr := convertNumericIdentifier(a[i])
+		bi, bErr := convertNumericIdentifier(b[i])
 
 		switch {
 		// 1. Identifiers consisting of only digits are compared numerically.
