@@ -84,6 +84,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
+			Name: "null yaml",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.lock",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null YAML value"},
+		},
+		{
 			Name: "empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
