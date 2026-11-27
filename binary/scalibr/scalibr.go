@@ -92,7 +92,8 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
-	deterministicIDs := fs.Bool("deterministic-ids", false, "If set, SCALIBR will generate deterministic IDs for packages instead of random UUIDs")
+	deterministicIDs := fs.Bool("deterministic-ids", false, "If set, SCALIBR will generate deterministic IDs instead of random UUIDs for packages and in SPDX and CDX outputs")
+	sbomTimestamp := fs.String("sbom-timestamp", "", "Unix timestamp in seconds to record as the creation time of SPDX and CDX outputs instead of the current time, e.g. $SOURCE_DATE_EPOCH")
 	cdxComponentName := fs.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
 	cdxComponentType := fs.String("cdx-component-type", "", "The 'metadata.component.type' field for the output CDX document")
 	cdxComponentVersion := fs.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
@@ -135,6 +136,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 		SPDXDocumentNamespace: *spdxDocumentNamespace,
 		SPDXCreators:          *spdxCreators,
 		DeterministicIDs:      *deterministicIDs,
+		SBOMTimestamp:         *sbomTimestamp,
 		CDXComponentName:      *cdxComponentName,
 		CDXComponentType:      *cdxComponentType,
 		CDXComponentVersion:   *cdxComponentVersion,

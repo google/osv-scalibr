@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/converter"
@@ -1699,5 +1700,31 @@ func TestGetSourceCodePURL(t *testing.T) {
 				t.Errorf("GetSourceCodePURL(%q, %q) mismatch (-want +got):\n%s", tc.repoURL, tc.commit, diff)
 			}
 		})
+	}
+}
+
+func TestToSPDX23_Created(t *testing.T) {
+	got := converter.ToSPDX23(inventory.Inventory{}, spdx.Config{Created: time.Unix(1700000000, 0)})
+	if want := "2023-11-14T22:13:20Z"; got.CreationInfo.Created != want {
+		t.Errorf("converter.ToSPDX23() creation time = %q, want %q", got.CreationInfo.Created, want)
+	}
+}
+
+// nameIDGenerator generates "id/<name>" IDs, with a character SPDX IDs don't allow.
+type nameIDGenerator struct{}
+
+func (nameIDGenerator) GenerateID(name string) (string, error) { return "id/" + name, nil }
+
+func TestToSPDX23_IDsFromIDGenerator(t *testing.T) {
+	orig := extractor.GetIDGenerator()
+	t.Cleanup(func() { extractor.SetIDGenerator(orig) })
+	extractor.SetIDGenerator(nameIDGenerator{})
+
+	got := converter.ToSPDX23(inventory.Inventory{}, spdx.Config{DocumentName: "doc"})
+	if want := common.ElementID("SPDXRef-Package-main-id-main"); got.Packages[0].PackageSPDXIdentifier != want {
+		t.Errorf("converter.ToSPDX23() main package ID = %q, want %q", got.Packages[0].PackageSPDXIdentifier, want)
+	}
+	if want := "https://spdx.google/id-doc"; got.DocumentNamespace != want {
+		t.Errorf("converter.ToSPDX23() document namespace = %q, want %q", got.DocumentNamespace, want)
 	}
 }

@@ -26,6 +26,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -49,13 +50,20 @@ type CDXConfig struct {
 	ComponentVersion string
 	ComponentType    string
 	Authors          []string
+	// Timestamp is written as the BOM's creation time. The zero value means
+	// the current time.
+	Timestamp time.Time
 }
 
 // ToCDX converts the SCALIBR scan results into a CycloneDX document.
 func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
+	timestamp := c.Timestamp
+	if timestamp.IsZero() {
+		timestamp = time.Now()
+	}
 	bom := cyclonedx.NewBOM()
 	bom.Metadata = &cyclonedx.Metadata{
-		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		Timestamp: timestamp.UTC().Format("2006-01-02T15:04:05Z"),
 		Tools: &cyclonedx.ToolsChoice{
 			Components: &[]cyclonedx.Component{
 				{
@@ -78,11 +86,16 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			componentType = cyclonedx.ComponentTypeApplication
 		}
 
+		id, err := extractor.GetIDGenerator().GenerateID(c.ComponentName)
+		if err != nil {
+			log.Warnf("Failed to generate ID for component %q: %v", c.ComponentName, err)
+			id = uuid.New().String()
+		}
 		bom.Metadata.Component = &cyclonedx.Component{
 			Name:    c.ComponentName,
 			Version: c.ComponentVersion,
 			Type:    componentType,
-			BOMRef:  uuid.New().String(),
+			BOMRef:  id,
 		}
 	}
 	if len(c.Authors) > 0 {
@@ -97,8 +110,13 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 
 	comps := make([]cyclonedx.Component, 0, len(i.Packages))
 	for _, pkg := range i.Packages {
+		id, err := pkg.GetIDOrGenerate()
+		if err != nil {
+			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
+			continue
+		}
 		comp := cyclonedx.Component{
-			BOMRef:  uuid.New().String(),
+			BOMRef:  id,
 			Type:    cyclonedx.ComponentTypeLibrary,
 			Name:    pkg.Name,
 			Version: pkg.Version,

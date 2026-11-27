@@ -17,6 +17,7 @@ package converter_test
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-cmp/cmp"
@@ -138,6 +139,7 @@ func TestToCDX(t *testing.T) {
 			desc: "Package_without_component_name",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
+					ID:       "pkg-1",
 					Name:     "software",
 					Version:  "1.2.3",
 					PURLType: purl.TypePyPi,
@@ -164,7 +166,7 @@ func TestToCDX(t *testing.T) {
 				},
 				Components: new([]cyclonedx.Component{
 					{
-						BOMRef:     "eb9d18a4-4784-445d-87f3-c67cf22746e9",
+						BOMRef:     "pkg-1",
 						Type:       "library",
 						Name:       "software",
 						Version:    "1.2.3",
@@ -191,5 +193,28 @@ func TestToCDX(t *testing.T) {
 				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
+	}
+}
+
+func TestToCDX_Timestamp(t *testing.T) {
+	got := converter.ToCDX(inventory.Inventory{}, converter.CDXConfig{Timestamp: time.Unix(1700000000, 0)})
+	if want := "2023-11-14T22:13:20Z"; got.Metadata.Timestamp != want {
+		t.Errorf("converter.ToCDX() timestamp = %q, want %q", got.Metadata.Timestamp, want)
+	}
+}
+
+// nameIDGenerator generates "id-<name>" IDs.
+type nameIDGenerator struct{}
+
+func (nameIDGenerator) GenerateID(name string) (string, error) { return "id-" + name, nil }
+
+func TestToCDX_RootBOMRefFromIDGenerator(t *testing.T) {
+	orig := extractor.GetIDGenerator()
+	t.Cleanup(func() { extractor.SetIDGenerator(orig) })
+	extractor.SetIDGenerator(nameIDGenerator{})
+
+	got := converter.ToCDX(inventory.Inventory{}, converter.CDXConfig{ComponentName: "sbom-1"})
+	if want := "id-sbom-1"; got.Metadata.Component.BOMRef != want {
+		t.Errorf("converter.ToCDX() root bom-ref = %q, want %q", got.Metadata.Component.BOMRef, want)
 	}
 }

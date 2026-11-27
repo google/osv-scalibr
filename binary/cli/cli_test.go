@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -103,6 +104,22 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:   "/",
 				Output: []string{"proto=result.png"},
+			},
+			wantErr: cmpopts.AnyError,
+		}, {
+			desc: "SBOM_timestamp",
+			flags: &cli.Flags{
+				Root:          "/",
+				Output:        []string{"cdx-json=result.cdx.json"},
+				SBOMTimestamp: "1700000000",
+			},
+			wantErr: nil,
+		}, {
+			desc: "SBOM_timestamp_not_in_Unix_seconds",
+			flags: &cli.Flags{
+				Root:          "/",
+				Output:        []string{"cdx-json=result.cdx.json"},
+				SBOMTimestamp: "2023-11-14T22:13:20Z",
 			},
 			wantErr: cmpopts.AnyError,
 		}, {
@@ -1155,5 +1172,17 @@ func TestGetCDXConfig_Authors(t *testing.T) {
 				t.Errorf("%+v.GetCDXConfig().Authors unexpected diff (-want +got):\n%s", flags, diff)
 			}
 		})
+	}
+}
+
+func TestGetSBOMConfigs_Timestamp(t *testing.T) {
+	flags := &cli.Flags{SBOMTimestamp: "1700000000"}
+	want := time.Unix(1700000000, 0)
+
+	if got := flags.GetSPDXConfig().Created; !got.Equal(want) {
+		t.Errorf("%+v.GetSPDXConfig().Created = %v, want %v", flags, got, want)
+	}
+	if got := flags.GetCDXConfig().Timestamp; !got.Equal(want) {
+		t.Errorf("%+v.GetCDXConfig().Timestamp = %v, want %v", flags, got, want)
 	}
 }

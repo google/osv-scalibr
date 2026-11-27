@@ -90,6 +90,14 @@ Some fields in the generated SPDX can be overwritten:
 scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-namespace" --spdx-creators=Organization:Google -o spdx23-json=result.spdx.json
 ```
 
+To record a fixed creation time in SPDX and CycloneDX outputs instead of the
+current time, pass `--sbom-timestamp`. With `--deterministic-ids` as well, the
+outputs are reproducible, e.g. in reproducible builds:
+
+```
+scalibr --deterministic-ids --sbom-timestamp="$SOURCE_DATE_EPOCH" -o spdx23-json=result.spdx.json -o cdx-json=result.cdx.json
+```
+
 ## Running built-in plugins
 
 ### With the standalone binary

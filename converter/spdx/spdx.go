@@ -56,6 +56,21 @@ type Config struct {
 	DocumentName      string
 	DocumentNamespace string
 	Creators          []common.Creator
+	// Created is written as the document's creation time. The zero value
+	// means the current time.
+	Created time.Time
+}
+
+// generateID returns an ID for name from the package ID generator, or a random
+// UUID if that fails. Characters that SPDX IDs don't allow are replaced, which
+// also keeps the ID safe in a URI.
+func generateID(name string) string {
+	id, err := extractor.GetIDGenerator().GenerateID(name)
+	if err != nil {
+		log.Warnf("Failed to generate ID for %q: %v", name, err)
+		return uuid.New().String()
+	}
+	return replaceSPDXIDInvalidChars(id)
 }
 
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
@@ -63,7 +78,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	packages := make([]*v2_3.Package, 0, len(i.Packages)+1)
 
 	// Add a main package that contains all other top-level packages.
-	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
+	mainPackageID := SPDXRefPrefix + "Package-main-" + generateID("main")
 	packages = append(packages, &v2_3.Package{
 		PackageName:           "main",
 		PackageSPDXIdentifier: common.ElementID(mainPackageID),
@@ -149,7 +164,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	}
 	namespace := c.DocumentNamespace
 	if namespace == "" {
-		namespace = "https://spdx.google/" + uuid.New().String()
+		namespace = "https://spdx.google/" + generateID(name)
 	}
 	creators := []common.Creator{
 		{
@@ -158,6 +173,10 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		},
 	}
 	creators = append(creators, c.Creators...)
+	created := c.Created
+	if created.IsZero() {
+		created = time.Now()
+	}
 	return &v2_3.Document{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
@@ -166,7 +185,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		DocumentNamespace: namespace,
 		CreationInfo: &v2_3.CreationInfo{
 			Creators: creators,
-			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+			Created:  created.UTC().Format("2006-01-02T15:04:05Z"),
 		},
 		Packages:      packages,
 		Files:         files,
