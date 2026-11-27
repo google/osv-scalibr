@@ -25,7 +25,7 @@ import (
 const maxTokenLength = 71
 
 // keyRe is a regular expression that matches a pyx v1 user key.
-var keyRe = regexp.MustCompile(`sk-pyx-[a-zA-Z0-9]{64}`)
+var keyRe = regexp.MustCompile(`sk-pyx-[a-zA-Z\d]{64}`)
 
 // NewDetector returns a new simpletoken.Detector that matches pyx v1
 // user keys.

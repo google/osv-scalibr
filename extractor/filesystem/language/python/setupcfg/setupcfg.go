@@ -42,7 +42,7 @@ const (
 var (
 	// reValidPkg matches valid PyPI package names per PEP 508,
 	// consistent with requirements.go.
-	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
+	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z\d])$`)
 )
 
 // Extractor extracts Python packages from setup.cfg manifests.

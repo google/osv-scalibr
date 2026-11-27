@@ -24,7 +24,7 @@ var (
 	alpineNumberComponentsFinder     = regexp.MustCompile(`^((\d+)\.?)*`)
 	alpineIsFirstCharLowercaseLetter = regexp.MustCompile(`^[a-z]`)
 	alpineSuffixesFinder             = regexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
-	alpineHashFinder                 = regexp.MustCompile(`^~([0-9a-f]+)`)
+	alpineHashFinder                 = regexp.MustCompile(`^~([\da-f]+)`)
 	alpineBuildComponentFinder       = regexp.MustCompile(`^-r(\d*)`)
 )
 

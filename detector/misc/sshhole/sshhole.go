@@ -57,11 +57,11 @@ var (
 	// "OpenSSH_10.3p1". The "p<N>" suffix is required so that the client
 	// compatibility patterns compiled into sshd (e.g. "OpenSSH_3.0*",
 	// "OpenSSH_6.6.1*" in compat.c) are not mistaken for the sshd version.
-	openSSHVersionRegex = regexp.MustCompile(`OpenSSH_([0-9]+\.[0-9]+p[0-9]+)`)
+	openSSHVersionRegex = regexp.MustCompile(`OpenSSH_(\d+\.\d+p\d+)`)
 
 	// Matches generic OpenSSH versions across distributions (e.g. "OpenSSH_8.8p1",
 	// "8.8p1", "8.8_p1-r1", "1:9.2p1-2+deb12u3", "9.9p1_1").
-	openSSHGenericVerRegex = regexp.MustCompile(`^(?:OpenSSH_)?(?:[0-9]+:)?([0-9]+)\.([0-9]+)(?:_?p([0-9]+))?(?:-r([0-9]+))?`)
+	openSSHGenericVerRegex = regexp.MustCompile(`^(?:OpenSSH_)?(?:\d+:)?(\d+)\.(\d+)(?:_?p(\d+))?(?:-r(\d+))?`)
 
 	// Candidate paths for the sshd binary inside the scanned root.
 	sshdBinaryPaths = []string{

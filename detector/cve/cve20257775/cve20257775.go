@@ -49,12 +49,12 @@ var (
 		regexp.MustCompile(`add\s+vpn\s+vserver.*`),
 		regexp.MustCompile(`enable\s+ns\s+feature\s+lb.*`),
 		regexp.MustCompile(`add\s+serviceGroup\s+\S+\s+(HTTP_QUIC|SSL|HTTP).*`),
-		regexp.MustCompile(`add\s+server\s+\S+\s+[0-9a-fA-F:]+`),
-		regexp.MustCompile(`bind\s+servicegroup\s+\S+\s+[0-9a-fA-F:]+`),
+		regexp.MustCompile(`add\s+server\s+\S+\s+[\da-fA-F:]+`),
+		regexp.MustCompile(`bind\s+servicegroup\s+\S+\s+[\da-fA-F:]+`),
 		regexp.MustCompile(`add\s+lb\s+vserver\s+\S+\s+(HTTP_QUIC|SSL|HTTP).*`),
 		regexp.MustCompile(`bind\s+lb\s+vserver\s+\S+\s+\S+`),
 		regexp.MustCompile(`add\s+server\s+\S+\s+-queryType\s+AAAA`),
-		regexp.MustCompile(`add\s+service\s+\S+\s+[0-9a-fA-F:]+`),
+		regexp.MustCompile(`add\s+service\s+\S+\s+[\da-fA-F:]+`),
 	}
 )
 

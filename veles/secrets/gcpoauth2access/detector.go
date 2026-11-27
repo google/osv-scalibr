@@ -39,7 +39,7 @@ var (
 	// The upper bound is based on the assumption that a typical access token is around 256 bits long,
 	// which is true for real examples and documentation.
 	// This is needed to avoid matching larger blobs of text.
-	tokenRe = regexp.MustCompile(`\bya29\.[a-zA-Z0-9_-]{10,500}`)
+	tokenRe = regexp.MustCompile(`\bya29\.[a-zA-Z\d_-]{10,500}`)
 )
 
 // NewDetector returns a new simpletoken.Detector that matches GCP OAuth2 access tokens.

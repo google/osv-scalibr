@@ -26,8 +26,8 @@ import (
 
 func setupTestDetector() *ntuple.Detector {
 	r1 := regexp.MustCompile(`https://api\.example\.com/v[1-9]`)
-	r2 := regexp.MustCompile(`client_id-[a-zA-Z0-9]{10}`)
-	r3 := regexp.MustCompile(`secret-[a-zA-Z0-9]{20}`)
+	r2 := regexp.MustCompile(`client_id-[a-zA-Z\d]{10}`)
+	r3 := regexp.MustCompile(`secret-[a-zA-Z\d]{20}`)
 
 	return &ntuple.Detector{
 		MaxDistance:   200,

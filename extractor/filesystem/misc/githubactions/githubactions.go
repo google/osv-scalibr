@@ -51,7 +51,7 @@ const (
 )
 
 // commitSHARegexp matches a 40-character hexadecimal Git commit SHA.
-var commitSHARegexp = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
+var commitSHARegexp = regexp.MustCompile(`^[\da-fA-F]{40}$`)
 
 // Extractor extracts GitHub Actions dependencies from workflow files.
 type Extractor struct {

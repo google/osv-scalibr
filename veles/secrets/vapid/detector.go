@@ -35,9 +35,9 @@ const (
 
 var (
 	// match a base64 blob of exactly 87 characters
-	publicKeyPattern = regexp.MustCompile(`\b[A-Za-z0-9_-]{87}\b`)
+	publicKeyPattern = regexp.MustCompile(`\b[A-Za-z\d_-]{87}\b`)
 	// match a base64 blob of exactly 43 characters
-	privateKeyPattern = regexp.MustCompile(`\b[A-Za-z0-9_-]{43}\b`)
+	privateKeyPattern = regexp.MustCompile(`\b[A-Za-z\d_-]{43}\b`)
 )
 
 // NewDetector returns a VAPID private key detector

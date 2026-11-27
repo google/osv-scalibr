@@ -54,10 +54,10 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // the Portfile file is found in /opt/local/var/macports/registry/portfiles/<packagename>-<version>_<revision>/<SHA256 hash of Portfile>-<index>/Portfile
-var filePathRegex = regexp.MustCompile(`macports/registry/portfiles/([^-]+(?:-[^-]+)*)-([0-9][^_]*)_([0-9]+)/[a-f0-9]{64}-\d+/Portfile$`)
+var filePathRegex = regexp.MustCompile(`macports/registry/portfiles/([^-]+(?:-[^-]+)*)-(\d[^_]*)_(\d+)/[a-f\d]{64}-\d+/Portfile$`)
 
 // This regex is used for extracting package name, version and revision from the directory name. Example directory name: autoconf-2.72_0
-var portfileParsingRegex = regexp.MustCompile(`^(.+)-([0-9][^_]*)_(\d+)$`)
+var portfileParsingRegex = regexp.MustCompile(`^(.+)-(\d[^_]*)_(\d+)$`)
 
 // FileRequired returns true if the specified file matches Portfile file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {

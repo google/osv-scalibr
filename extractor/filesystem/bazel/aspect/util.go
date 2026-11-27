@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	reURL1 = regexp.MustCompile(`/v?(\d+\.\d+\.\d+(?:[\.-][a-zA-Z0-9\.]+)?)(?:/|$)`)
+	reURL1 = regexp.MustCompile(`/v?(\d+\.\d+\.\d+(?:[.-][a-zA-Z\d.]+)?)(?:/|$)`)
 	reURL2 = regexp.MustCompile(`/v?(\d+\.\d+)(?:/|$)`)
-	reURL3 = regexp.MustCompile(`[-_]v?(\d+\.\d+(?:\.\d+)*(?:[-_.][a-zA-Z0-9]+)?)(?:[-_]|\.tar|\.zip|\.jar|$)`)
+	reURL3 = regexp.MustCompile(`[-_]v?(\d+\.\d+(?:\.\d+)*(?:[-_.][a-zA-Z\d]+)?)(?:[-_]|\.tar|\.zip|\.jar|$)`)
 	reURL4 = regexp.MustCompile(`(?:^|[-_/])v?(\d{8})(?:[-_.]|$)`)
 
-	reStrip1 = regexp.MustCompile(`(?:^|[-_.])v?(\d+\.\d+(?:\.\d+)*(?:-[a-zA-Z0-9\.]+)?)$`)
+	reStrip1 = regexp.MustCompile(`(?:^|[-_.])v?(\d+\.\d+(?:\.\d+)*(?:-[a-zA-Z\d.]+)?)$`)
 	reStrip2 = regexp.MustCompile(`(\d+\.\d+\.\d+)`)
 	reStrip3 = regexp.MustCompile(`(\d+\.\d+)`)
 )

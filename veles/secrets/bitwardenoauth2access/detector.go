@@ -35,12 +35,12 @@ var (
 	// Pattern: "user_<UUID>_token_apiKeyClientSecret" followed by a JSON separator.
 	// The UUID is captured in a submatch group for extraction as the client ID.
 	keywordRe = regexp.MustCompile(
-		`"user_([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})_token_apiKeyClientSecret"\s*:`,
+		`"user_([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[\da-fA-F]{12})_token_apiKeyClientSecret"\s*:`,
 	)
 
 	// secretRe matches the client secret value: an alphanumeric string (10-50 chars)
 	// typically found as a quoted JSON value.
-	secretRe = regexp.MustCompile(`"([A-Za-z0-9]{10,50})"`)
+	secretRe = regexp.MustCompile(`"([A-Za-z\d]{10,50})"`)
 )
 
 var _ veles.Detector = NewDetector()

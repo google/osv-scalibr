@@ -29,9 +29,9 @@ import (
 
 var (
 	// "name": {:git, repo, "commit-hash", <other comma-separated values> },
-	gitDependencyLineRe = regexp.MustCompile(`^ +"([^"]+)": \{:git, +"([^,]+)", +\"([^,]+)\",.+$`)
+	gitDependencyLineRe = regexp.MustCompile(`^ +"([^"]+)": \{:git, +"([^,]+)", +"([^,]+)",.+$`)
 	// "name": {source, name, "version", "commit-hash", <other comma-separated values> },
-	regularDependencyLineRe = regexp.MustCompile(`^ +"([^"]+)": \{([^,]+), +([^,]+), +\"([^,]+)\", +\"([^,]+)\",.+$`)
+	regularDependencyLineRe = regexp.MustCompile(`^ +"([^"]+)": \{([^,]+), +([^,]+), +"([^,]+)", +"([^,]+)",.+$`)
 )
 
 // Package represents a single package parsed from Mix.lock.

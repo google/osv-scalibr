@@ -29,7 +29,7 @@ const maxTokenLength = 200
 // keyRe is a regular expression that matches a PyPI API Token.
 // PyPI API Tokens have the form: `pypi-` followed by at least 85
 // alphanumeric characters.
-var keyRe = regexp.MustCompile(`pypi-[A-Za-z0-9-_]{85,}`)
+var keyRe = regexp.MustCompile(`pypi-[A-Za-z\d-_]{85,}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // PyPI API Tokens.
