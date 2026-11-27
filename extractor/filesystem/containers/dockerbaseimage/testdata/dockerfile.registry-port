@@ -1,0 +1,7 @@
+FROM localhost:5000/app AS a
+
+FROM registry.example.com:5000/team/app:1.2.3 AS b
+
+FROM ghcr.io/org/app:2.0@sha256:5a271780516b718910041c0993952f14371490216692290d234a9b231d102e1c AS c
+
+RUN echo hello world
