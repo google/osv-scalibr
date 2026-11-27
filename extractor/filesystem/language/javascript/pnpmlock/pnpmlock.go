@@ -94,7 +94,28 @@ var (
 	nameVersionRegexp = regexp.MustCompile(`^(.+)@([\w.-]+)(?:\(|$)`)
 
 	codeLoadURLRegexp = regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+){2}/tar\.gz/(\w+)$`)
+
+	// Matches a dependency path written in the v9 "<name>@<version>" form,
+	// where <name> is a bare or scoped npm package name and <version> begins
+	// with a digit. Path-style keys ("/name@1.0.0", "/name/1.0.0"),
+	// registry-host keys ("registry.npmjs.org/foo/1.1.0"), git keys
+	// ("github.com/org/repo/<sha>", "git@host+org/repo/<sha>") and tarball
+	// keys ("@host/api/.../pkg.tgz") do not match.
+	v9DependencyPathRegexp = regexp.MustCompile(`^(?:@[^/@\s]+/)?[^/@\s]+@\d`)
 )
+
+// isV9DependencyPath reports whether a dependency path uses the v9
+// "<name>@<version>" form rather than the "/"-prefixed path form of v5/v6.
+//
+// The key format is a property of each key, not only of the lockfileVersion
+// header: a lockfile produced by merging branches written by different pnpm
+// versions can carry a v6 header with v9-style keys. Parsing such a key as a
+// path drops its scope ("@rollup/rollup-linux-x64-gnu@4.0.0" would become
+// "rollup-linux-x64-gnu"), which names a different, possibly malicious,
+// package; unscoped v9 keys are rejected as invalid paths and lost entirely.
+func isV9DependencyPath(dependencyPath string) bool {
+	return v9DependencyPathRegexp.MatchString(strings.Trim(dependencyPath, "'"))
+}
 
 // extractPnpmPackageNameAndVersion parses a dependency path, attempting to
 // extract the name and version of the package it represents
@@ -106,8 +127,10 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 		return "", "", nil
 	}
 
-	// v9.0 specifies the dependencies as <package>@<version> rather than as a path
-	if lockfileVersion >= 9.0 {
+	// v9.0 specifies the dependencies as <package>@<version> rather than as a
+	// path. Keys in that form are also accepted under an older header, since
+	// merged lockfiles can mix both formats.
+	if lockfileVersion >= 9.0 || isV9DependencyPath(dependencyPath) {
 		dependencyPath = strings.Trim(dependencyPath, "'")
 		dependencyPath, isScoped := strings.CutPrefix(dependencyPath, "@")
 
@@ -186,6 +209,18 @@ func parseNameAtVersion(value string) (name string, version string) {
 func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path string) ([]*extractor.Package, error) {
 	packages := make([]*extractor.Package, 0, len(lockfile.Packages))
 	errs := []error{}
+
+	if lockfile.Version < 9.0 {
+		mixed := 0
+		for s := range lockfile.Packages {
+			if isV9DependencyPath(s) {
+				mixed++
+			}
+		}
+		if mixed > 0 {
+			log.Warnf("pnpm lockfile declares version %v but %d of %d package keys use the v9 format; parsing each key by its own format", lockfile.Version, mixed, len(lockfile.Packages))
+		}
+	}
 
 	for s, pkg := range lockfile.Packages {
 		name, version, err := extractPnpmPackageNameAndVersion(s, lockfile.Version)

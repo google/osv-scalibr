@@ -288,6 +288,56 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			// A merge can leave a v6 header over v9-style keys: every package must
+			// keep its scope, and unscoped v9 keys must not be dropped as invalid.
+			Name: "mixed key formats under a v6 header",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/mixed-key-formats.v6.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "@typescript-eslint/types",
+					Version:    "5.57.1",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/mixed-key-formats.v6.yaml", 13),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "left-pad",
+					Version:    "1.3.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/mixed-key-formats.v6.yaml", 17),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@rollup/rollup-linux-x64-gnu",
+					Version:    "4.53.5",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/mixed-key-formats.v6.yaml", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "react-async-hook",
+					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/mixed-key-formats.v6.yaml", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "peer dependencies",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies.yaml",

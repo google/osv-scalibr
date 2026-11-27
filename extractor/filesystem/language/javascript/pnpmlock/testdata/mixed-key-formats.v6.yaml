@@ -1,0 +1,34 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  '@typescript-eslint/types':
+    specifier: ^5.0.0
+    version: 5.57.1
+  left-pad:
+    specifier: ^1.3.0
+    version: 1.3.0
+
+packages:
+
+  /@typescript-eslint/types@5.57.1:
+    resolution: {integrity: sha512-bSs4LOgyV3bJ08F5RDqO2KXqg3WAdwHCu06zOqcQ6vqbTJizyBhuh1o1ImC69X4bV2g1OJxbH71PJqiO7Y1RuA==}
+    dev: false
+
+  /left-pad@1.3.0:
+    resolution: {integrity: sha512-XI5MPzVNApjAyhQzphX8BkmKsKUxD4LdyK24iZeQEbTcd6iiDuJ6vY3K7PZvc5S1YuxeiDZWE9jvjm8sL3hkPA==}
+    dev: false
+
+  '@rollup/rollup-linux-x64-gnu@4.53.5':
+    resolution: {integrity: sha512-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa==}
+    cpu: [x64]
+    os: [linux]
+
+  react-async-hook@4.0.0:
+    resolution: {integrity: sha512-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb==}
+
+snapshots:
+
+  '@rollup/rollup-linux-x64-gnu@4.53.5':
+    optional: true
+
+  react-async-hook@4.0.0: {}
