@@ -191,7 +191,7 @@ func openSectionReader(input *filesystem.ScanInput) (*io.SectionReader, io.Close
 	}
 	fsys := input.FS
 	if fsys == nil && input.Root != "" {
-		fsys = scalibrfs.DirFS(input.Root)
+		fsys = scalibrfs.ConfinedDirFS(input.Root)
 		if c, ok := fsys.(io.Closer); ok {
 			defer func() { _ = c.Close() }()
 		}
