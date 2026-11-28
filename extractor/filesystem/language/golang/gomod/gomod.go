@@ -28,6 +28,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	gocommon "github.com/google/osv-scalibr/extractor/filesystem/language/golang/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
@@ -172,12 +173,9 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 		}
 
 		for _, replacement := range replacements {
-			packages[replacement] = &extractor.Package{
-				Name:     replace.New.Path,
-				Version:  strings.TrimPrefix(replace.New.Version, "v"),
-				PURLType: purl.TypeGolang,
-				Location: extractor.LocationFromPathAndLine(input.Path, replace.Syntax.Start.Line),
-			}
+			pkg := packages[replacement]
+			pkg.Location = extractor.LocationFromPathAndLine(input.Path, replace.Syntax.Start.Line)
+			gocommon.ApplyReplacement(pkg, replace.New.Path, replace.New.Version)
 		}
 	}
 

@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/groupid"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
@@ -263,7 +264,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 
 		path := filepath.Join(input.Path, file.Name)
 		switch {
-		case !e.extractFromPomXML && filepath.Base(file.Name) == "pom.properties":
+		case !e.extractFromPomXML && isPomFile(file.Name, "pom.properties"):
 			pp, err := parsePomProps(file)
 			if err != nil {
 				log.Errorf("%s failed to extract from pom.properties at %q: %v", e.Name(), path, err)
@@ -288,7 +289,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				})
 			}
 
-		case e.extractFromPomXML && filepath.Base(file.Name) == "pom.xml":
+		case e.extractFromPomXML && isPomFile(file.Name, "pom.xml"):
 			log.Debugf("Parsing pom.xml file %q", path)
 
 			project, err := ParsePomXML(file)
@@ -299,6 +300,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 			}
 
 			key := project.ProjectKey
+			if key.GroupID.ContainsProperty() || key.ArtifactID.ContainsProperty() {
+				continue // Skip, we can't determine the full package name.
+			}
+			if key.Version.ContainsProperty() {
+				key.Version = "" // Strip but leave the package, at least we have the name.
+			}
 			descriptorLoc := location.FromPath(input.Path)
 			packagePom = append(packagePom, &extractor.Package{
 				Name:     key.Name(),
@@ -373,6 +380,13 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		}
 	}
 
+	// Fallback to filename if the package is versionless, but only if only one manifest was found.
+	// Otherwise, we may be attributing the version of the main package to a bundled dependency.
+	if len(packagePom) == 1 && packagePom[0].Version == "" && e.extractFromFilename {
+		if p := ParseFilename(input.Path); p != nil {
+			packagePom[0].Version = p.Version
+		}
+	}
 	pkgs = append(pkgs, packagePom...)
 
 	// If there is no pom.properties, try combining MANIFEST.MF and filename.
@@ -402,6 +416,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 					groupID = metadata.GroupID
 					packageManifest = nil
 				}
+			}
+			// Override with a known group ID when MANIFEST.MF omits a usable
+			// artifact ID (e.g. multi-word Bundle-Name or per-entry Name headers).
+			if newGroupID := groupid.FromArtifactID(p.ArtifactID); newGroupID != "" {
+				groupID = newGroupID
+				packageManifest = nil
 			}
 			packageFilename = append(packageFilename, &extractor.Package{
 				Name:     fmt.Sprintf("%s:%s", groupID, p.ArtifactID),
@@ -473,4 +493,14 @@ func IsArchive(path string) bool {
 
 func isManifest(path string) bool {
 	return strings.ToLower(filepath.Base(path)) == "manifest.mf"
+}
+
+// isPomFile checks whether path is a Maven POM file (pom.properties or pom.xml).
+func isPomFile(path, base string) bool {
+	if filepath.Base(path) != base {
+		return false
+	}
+	slash := filepath.ToSlash(path)
+	// These filenames may appear in other locations. Only META-INF contains metadata in scope.
+	return strings.HasPrefix(slash, "META-INF/maven/") || !strings.Contains(slash, "/")
 }

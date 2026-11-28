@@ -1,0 +1,5 @@
+<project>
+  <groupId>com.example</groupId>
+  <artifactId>example-lib</artifactId>
+  <version>${example-version}</version>
+</project>

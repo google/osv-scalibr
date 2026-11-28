@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
@@ -205,7 +206,7 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 		log.Debugf("package.json file %s is a Visual Studio Code Extension Manifest, not an NPM package", path)
 		return nil, nil
 	}
-	if p.isUnityPackage() {
+	if p.isUnityPackage() || isInUnityPackageDir(path) {
 		log.Debugf("package.json file %s is a Unity package, not an NPM package", path)
 		return nil, nil
 	}
@@ -299,6 +300,30 @@ func (p packageJSON) isVSCodeExtension() bool {
 // this to differentiate them from NPM packages.
 func (p packageJSON) isUnityPackage() bool {
 	return p.Unity != ""
+}
+
+// unityPackageDirs are the directories where Unity's package manager keeps
+// installed and built-in packages. npm does not install packages into them.
+var unityPackageDirs = []string{
+	"Library/PackageCache",
+	"PackageManager/BuiltInPackages",
+}
+
+// isInUnityPackageDir returns true if path is the manifest at the root of a
+// package in one of unityPackageDirs, such as
+// Library/PackageCache/com.unity.modules.ai@1.0.0/package.json.
+//
+// Unity's built-in module manifests have no "unity" field, so isUnityPackage
+// misses them. Manifests nested deeper, such as a node_modules folder shipped
+// inside a Unity package, are still treated as npm packages.
+func isInUnityPackageDir(path string) bool {
+	dir := filepath.ToSlash(filepath.Dir(filepath.Dir(path)))
+	for _, d := range unityPackageDirs {
+		if dir == d || strings.HasSuffix(dir, "/"+d) {
+			return true
+		}
+	}
+	return false
 }
 
 func removeEmptyPersons(persons []*metadata.Person) []*metadata.Person {

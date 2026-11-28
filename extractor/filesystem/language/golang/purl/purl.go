@@ -18,6 +18,7 @@ package purl
 import (
 	"strings"
 
+	golangmeta "github.com/google/osv-scalibr/extractor/filesystem/language/golang/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -27,7 +28,7 @@ import (
 //   - The namespace and name must be lowercased.
 //
 // See: https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#golang
-func MakePackageURL(name string, version string) *purl.PackageURL {
+func MakePackageURL(name string, version string, meta any) *purl.PackageURL {
 	name = strings.ToLower(name)
 	namespace := ""
 	nameParts := strings.Split(name, "/")
@@ -35,10 +36,17 @@ func MakePackageURL(name string, version string) *purl.PackageURL {
 		name = nameParts[len(nameParts)-1]
 		namespace = strings.Join(nameParts[:len(nameParts)-1], "/")
 	}
+	var qualifiers purl.Qualifiers
+	if meta, ok := meta.(*golangmeta.Metadata); ok && meta != nil && meta.LocalReplacePath != "" {
+		qualifiers = purl.QualifiersFromMap(map[string]string{
+			purl.ReplacePath: meta.LocalReplacePath,
+		})
+	}
 	return &purl.PackageURL{
-		Type:      purl.TypeGolang,
-		Name:      name,
-		Namespace: namespace,
-		Version:   version,
+		Type:       purl.TypeGolang,
+		Name:       name,
+		Namespace:  namespace,
+		Version:    version,
+		Qualifiers: qualifiers,
 	}
 }

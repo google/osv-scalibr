@@ -43,7 +43,7 @@ type manifest struct {
 
 // valid returns true if mf is a valid manifest property.
 func (mf manifest) valid() bool {
-	return mf.GroupID != "" && mf.ArtifactID != "" && mf.Version != ""
+	return mf.GroupID != "" && mf.ArtifactID != ""
 }
 
 func parseManifest(f *zip.File) (manifest, error) {
@@ -142,7 +142,7 @@ func getFirstValidGroupID(h textproto.MIMEHeader, names []string) string {
 }
 
 func validGroupID(name string) bool {
-	return name != "" && !strings.Contains(name, " ")
+	return name != "" && !strings.Contains(name, " ") && !containsPlaceholder(name)
 }
 
 func getArtifactID(h textproto.MIMEHeader) string {
@@ -186,16 +186,16 @@ func getVersion(h textproto.MIMEHeader) string {
 	// Some versions contain extra information like the build number or date.
 	// For example "1.4 1855 April 22 2006"
 	// We only want the first part.
-	version := getFirst(h, keys)
+	version := getFirstValidVersion(h, keys)
 	version = strings.Split(version, " ")[0]
 
 	return version
 }
 
-func getFirst(h textproto.MIMEHeader, names []string) string {
+func getFirstValidVersion(h textproto.MIMEHeader, names []string) string {
 	for _, n := range names {
-		if h.Get(n) != "" {
-			return h.Get(n)
+		if v := h.Get(n); v != "" && !containsPlaceholder(v) {
+			return v
 		}
 	}
 	return ""
@@ -250,9 +250,9 @@ func validArtifactID(name string) bool {
 		return false
 	}
 
-	// e.g. "${org.eclipse.jdt.annotation.bundleName}"
+	// e.g. "${org.eclipse.jdt.annotation.bundleName}" or "jansi-${platform}"
 	// b/298196886#comment9
-	if strings.HasPrefix(name, "$") {
+	if containsPlaceholder(name) {
 		return false
 	}
 

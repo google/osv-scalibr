@@ -1,0 +1,8 @@
+{
+  "name": "com.unity.modules.ai",
+  "version": "1.0.0",
+  "type": "module",
+  "displayName": "AI",
+  "description": "The AI module implements the path finding features in Unity.",
+  "dependencies": {}
+}

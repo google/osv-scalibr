@@ -1,0 +1,3 @@
+Bundle-SymbolicName: com.example.foo
+Implementation-Title: foo
+Implementation-Version: ${project.version}

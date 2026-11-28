@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -357,6 +358,10 @@ func openReader(root *ScanRoot, path string, reader io.Reader) (io.ReadCloser, e
 		if fsys != nil {
 			f, err := fsys.Open(filepath.ToSlash(path))
 			if err == nil {
+				if info, statErr := f.Stat(); statErr == nil && info.IsDir() {
+					_ = f.Close()
+					return nil, &fs.PathError{Op: "open", Path: path, Err: fs.ErrInvalid}
+				}
 				return f, nil
 			}
 			if !errors.Is(err, fs.ErrNotExist) || reader == nil {
@@ -365,12 +370,29 @@ func openReader(root *ScanRoot, path string, reader io.Reader) (io.ReadCloser, e
 		}
 	}
 	if reader == nil {
-		return nil, errors.New("GetRealPath: both root.FS and reader are nil")
+		return nil, errors.New("openReader: both root.FS and reader are nil")
 	}
 	return io.NopCloser(reader), nil
 }
 
-func copyToTempFile(reader io.Reader) (realPath string, err error) {
+func isSafeTempBase(base string) bool {
+	if base == "" || base == "." || base == ".." || len(base) > 128 || strings.HasSuffix(base, ".") {
+		return false
+	}
+	if _, err := filepath.Localize(base); err != nil {
+		return false
+	}
+	for i := range len(base) {
+		c := base[i]
+		isAlphaNum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+		if !isAlphaNum && c != '.' && c != '_' && c != '+' && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func copyToTempFile(reader io.Reader, relPath string) (realPath string, err error) {
 	dir, err := os.MkdirTemp("", "scalibr-tmp")
 	if err != nil {
 		return "", err
@@ -381,7 +403,11 @@ func copyToTempFile(reader io.Reader) (realPath string, err error) {
 		}
 	}()
 
-	realPath = filepath.Join(dir, "file")
+	fileName := "file"
+	if base := path.Base(filepath.ToSlash(relPath)); isSafeTempBase(base) {
+		fileName = base
+	}
+	realPath = filepath.Join(dir, fileName)
 	f, err := os.Create(realPath)
 	if err != nil {
 		return "", err
@@ -408,6 +434,8 @@ func closeIgnoringClosed(f *os.File) error {
 // filesystem and returns its absolute path. It is up to the caller to delete the temporary
 // directory (filepath.Dir(realPath)) once they are done using it.
 //
+// Prefer OpenOSPath or OpenOSFile when an isolated copy is not always required.
+//
 // Sample code to delete the directory:
 // ```
 // realPath := GetRealPath(...)
@@ -422,7 +450,45 @@ func GetRealPath(root *ScanRoot, path string, reader io.Reader) (string, error) 
 		return "", err
 	}
 	defer func() { _ = rc.Close() }()
-	return copyToTempFile(rc)
+	return copyToTempFile(rc, path)
+}
+
+var osDirFSType = reflect.TypeOf(os.DirFS("."))
+
+func isUnconfinedRealRoot(root *ScanRoot) bool {
+	return root != nil && !root.IsVirtual() && root.FS != nil && reflect.TypeOf(root.FS) == osDirFSType
+}
+
+// OpenOSPath returns a host filesystem path for the target file along with a cleanup function
+// that removes any temporary copy that had to be created. On unconfined real filesystems
+// (os.DirFS), it returns the in-place file path without copying; on confined or virtual
+// filesystems, it copies the file into an isolated temporary directory so database engines
+// cannot follow sibling (-wal/-journal/-shm) symlinks.
+func OpenOSPath(root *ScanRoot, path string, reader io.Reader) (string, func() error, error) {
+	if isUnconfinedRealRoot(root) {
+		slashPath := filepath.ToSlash(path)
+		info, err := root.FS.Stat(slashPath)
+		if err == nil {
+			if info.IsDir() {
+				return "", nil, &fs.PathError{Op: "open", Path: path, Err: fs.ErrInvalid}
+			}
+			return filepath.Join(root.Path, filepath.FromSlash(slashPath)), func() error { return nil }, nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) || reader == nil {
+			return "", nil, err
+		}
+	}
+	rc, err := openReader(root, path, reader)
+	if err != nil {
+		return "", nil, err
+	}
+	realPath, copyErr := copyToTempFile(rc, path)
+	_ = rc.Close()
+	if copyErr != nil {
+		return "", nil, copyErr
+	}
+	dir := filepath.Dir(realPath)
+	return realPath, func() error { return os.RemoveAll(dir) }, nil
 }
 
 // OpenOSFile returns an *os.File handle for the target file along with a cleanup function that
@@ -437,7 +503,7 @@ func OpenOSFile(root *ScanRoot, path string, reader io.Reader) (*os.File, func()
 	if osFile, ok := rc.(*os.File); ok {
 		return osFile, func() error { return closeIgnoringClosed(osFile) }, nil
 	}
-	realPath, copyErr := copyToTempFile(rc)
+	realPath, copyErr := copyToTempFile(rc, path)
 	_ = rc.Close()
 	if copyErr != nil {
 		return nil, nil, copyErr
@@ -454,4 +520,28 @@ func OpenOSFile(root *ScanRoot, path string, reader io.Reader) (*os.File, func()
 		return errors.Join(closeErr, rmErr)
 	}
 	return osFile, cleanup, nil
+}
+
+var sqliteURIReplacer = strings.NewReplacer(
+	"%", "%25",
+	"?", "%3F",
+	"#", "%23",
+)
+
+// SQLiteReadOnlyURI encodes a host filesystem path as a read-only, immutable SQLite file: URI.
+// Escaping prevents special characters in host paths (such as '?') from injecting SQLite URI
+// query parameters (e.g. _pragma), and immutable=1 allows reading WAL-mode databases in read-only
+// or unprivileged directories without creating -wal/-shm sidecar files.
+func SQLiteReadOnlyURI(osPath string) string {
+	slashPath := filepath.ToSlash(osPath)
+	escaped := sqliteURIReplacer.Replace(slashPath)
+	switch {
+	case strings.HasPrefix(escaped, "//"):
+		// Preserve UNC / leading-double-slash paths without triggering URI authority parsing.
+		return "file://" + escaped + "?mode=ro&immutable=1"
+	case len(escaped) >= 3 && ((escaped[0] >= 'a' && escaped[0] <= 'z') || (escaped[0] >= 'A' && escaped[0] <= 'Z')) && escaped[1] == ':' && escaped[2] == '/':
+		return "file:/" + escaped + "?mode=ro&immutable=1"
+	default:
+		return "file:" + escaped + "?mode=ro&immutable=1"
+	}
 }
