@@ -18,6 +18,7 @@ package osvecosystem
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -44,6 +45,7 @@ func (p Parsed) IsEmpty() bool {
 }
 
 var ubuntuVariantReplacer = strings.NewReplacer(":Pro", "", ":LTS", "")
+var pypiNameNormalizerRe = regexp.MustCompile(`[-_.]+`)
 
 func (p Parsed) normalizeSuffix() string {
 	if p.Ecosystem == osvconstants.EcosystemUbuntu && p.Suffix != "" {
@@ -101,6 +103,27 @@ func (p *Parsed) UnmarshalJSON(data []byte) error {
 // This method implements the json.Marshaler interface.
 func (p Parsed) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + p.String() + `"`), nil
+}
+
+// NormalizePackageName applies ecosystem specific normalization rules to the name of
+// a package, to make it suitable to compare to other names from the same ecosystem.
+func (p Parsed) NormalizePackageName(name string) string {
+	// NuGet package IDs are case-insensitive
+	if p.Ecosystem == osvconstants.EcosystemNuGet {
+		return strings.ToLower(name)
+	}
+
+	// crates.io names are case-insensitive, and treat '-' and '_' as equivalent
+	if p.Ecosystem == osvconstants.EcosystemCratesIO {
+		return strings.ReplaceAll(strings.ToLower(name), "_", "-")
+	}
+
+	// PyPI names are normalized per https://www.python.org/dev/peps/pep-0503/#normalized-names
+	if p.Ecosystem == osvconstants.EcosystemPyPI {
+		return strings.ToLower(pypiNameNormalizerRe.ReplaceAllString(name, "-"))
+	}
+
+	return name
 }
 
 // GetValidity checks if the ecosystem is a valid OSV ecosystem value. Returns nil if valid, error otherwise.
