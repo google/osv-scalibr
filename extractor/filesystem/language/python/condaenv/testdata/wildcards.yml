@@ -1,0 +1,7 @@
+name: wildcards
+dependencies:
+  - numpy=1.26.*
+  - scipy=1.*
+  - pandas=*
+  - pip:
+    - torch==2.0.*

@@ -1,0 +1,15 @@
+name: unpinned
+dependencies:
+  - numpy
+  - scipy>=1.9.0
+  - pandas<=1.5.3
+  - matplotlib!=3.6.0
+  - torch~=2.0
+  - "jax>1.0"
+  - pip:
+    - tensorflow>=2.10
+    - "scikit-learn==1.2.0,!=1.2.1"
+    - torch @ https://download.pytorch.org/whl/torch-2.0.0.whl
+    - git+https://github.com/huggingface/transformers.git
+    - -r extra-requirements.txt
+    - --index-url https://pypi.org/simple
