@@ -25,7 +25,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
+	"github.com/google/osv-scalibr/internal/severity"
 	"github.com/muesli/reflow/truncate"
 )
 
