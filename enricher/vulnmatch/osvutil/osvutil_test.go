@@ -103,6 +103,32 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "Go stdlib with go prefix (2-component version)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "go",
+				Version:  "go1.20",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "stdlib",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.20.99",
+			},
+		},
+		{
+			name: "Go stdlib with go prefix (3-component version)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "stdlib",
+				Version:  "go1.27.3",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "stdlib",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.27.3",
+			},
+		},
+		{
 			name: "Go module with uppercase path",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeGolang,
