@@ -88,7 +88,7 @@ func TestExtractAptCache(t *testing.T) {
 			wantErr: ErrMissingAptCache,
 		},
 		{
-			name: "valid_apt_cache_with_matching_and_non-matching_files",
+			name: "valid_apt_cache_with_matching_and_non-index_files",
 			txt: `
 -- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
 Package: curl
@@ -98,9 +98,8 @@ Architecture: amd64
 Package: wget
 Version: 4.5.6
 
--- storage.googleapis.com_dataproc-bigtop-repo_2%5f3%5fdeb12%5f20251203%5f064720-RC01_dists_dataproc_contrib_binary-amd64_Packages.lz4 --
-Package: htop
-Version: 2.0.0
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_InRelease --
+Origin: Ubuntu
 `,
 			want: &aptCache{
 				value: map[string]struct{}{
@@ -108,6 +107,82 @@ Version: 2.0.0
 					"wget": {},
 				},
 			},
+		},
+		{
+			name: "includes_non-main_components_from_official_archives",
+			txt: `
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_InRelease --
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Ubuntu
+Label: Ubuntu
+Suite: jammy
+Components: main restricted universe multiverse
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_universe_binary-amd64_Packages --
+Package: python3-aiohttp
+Version: 3.8.1-4
+
+-- var/lib/apt/lists/deb.debian.org_debian_dists_bookworm_Release --
+Origin: Debian
+Label: Debian
+Suite: stable
+-- var/lib/apt/lists/deb.debian.org_debian_dists_bookworm_contrib_binary-amd64_Packages.lz4 --
+Package: htop
+Version: 2.0.0
+
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: curl
+Version: 1.2.3
+`,
+			want: &aptCache{
+				value: map[string]struct{}{
+					"python3-aiohttp": {},
+					"htop":            {},
+					"curl":            {},
+				},
+			},
+		},
+		{
+			name: "excludes_non-main_components_from_third-party_repos",
+			txt: `
+-- var/lib/apt/lists/deb.debian.org_debian_dists_bookworm_main_binary-amd64_Packages --
+Package: wget
+Version: 4.5.6
+
+-- var/lib/apt/lists/storage.googleapis.com_dataproc-bigtop-repo_2%5f3%5fdeb12%5f20251203%5f064720-RC01_dists_dataproc_contrib_binary-amd64_Packages.lz4 --
+Package: htop
+Version: 2.0.0
+
+-- var/lib/apt/lists/download.docker.com_linux_debian_dists_bookworm_InRelease --
+Origin: Docker
+Label: Docker CE
+-- var/lib/apt/lists/download.docker.com_linux_debian_dists_bookworm_stable_binary-amd64_Packages --
+Package: docker-ce
+Version: 5:27.0.0-1~debian.12~bookworm
+`,
+			want: &aptCache{
+				value: map[string]struct{}{
+					"wget": {},
+				},
+			},
+		},
+		{
+			name: "only_third-party_indexes_is_not_missing_cache",
+			txt: `
+-- var/lib/apt/lists/storage.googleapis.com_dataproc-bigtop-repo_2%5f3%5fdeb12%5f20251203%5f064720-RC01_dists_dataproc_contrib_binary-amd64_Packages.lz4 --
+Package: htop
+Version: 2.0.0
+`,
+			want: &aptCache{},
+		},
+		{
+			name: "lists_dir_with_only_aux_files_is_missing_cache",
+			txt: `
+-- var/lib/apt/lists/lock --
+-- var/lib/apt/lists/auxfiles/.keep --
+`,
+			wantErr: ErrMissingAptCache,
 		},
 		{
 			name: "multiple_OS",
