@@ -89,6 +89,14 @@ func runAgainstEcosystemFixture(t *testing.T, ecosystem string, filename string)
 			t.Fatalf(`incorrect number of peices in fixture "%s" (got %d)`, line, len(pieces))
 		}
 
+		// skip lines with "+echo" versions when comparing Echo ecosystems, since
+		// Echo orders them above the base version rather than ignoring the build
+		if filename == "semver-versions.txt" &&
+			strings.HasPrefix(ecosystem, "Echo:") &&
+			strings.Contains(line, "+echo") {
+			continue
+		}
+
 		result := expectEcosystemCompareResult(t, ecosystem, pieces[0], pieces[1], pieces[2])
 
 		if !result {
@@ -295,6 +303,75 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			runAgainstEcosystemFixture(t, tt.name, tt.file)
 		})
+	}
+}
+
+func TestVersion_Compare_Echo(t *testing.T) {
+	tests := []struct {
+		name string
+		file string
+	}{
+		{
+			name: "npm",
+			file: "semver-versions.txt",
+		},
+		{
+			name: "NuGet",
+			file: "nuget-versions.txt",
+		},
+		{
+			name: "Maven",
+			file: "maven-versions.txt",
+		},
+		{
+			name: "Maven",
+			file: "maven-versions-generated.txt",
+		},
+		{
+			name: "PyPI",
+			file: "pypi-versions.txt",
+		},
+		{
+			name: "PyPI",
+			file: "pypi-versions-generated.txt",
+		},
+	}
+	for _, tt := range tests {
+		t.Run("Echo:"+tt.name, func(t *testing.T) {
+			runAgainstEcosystemFixture(t, "Echo:"+tt.name, tt.file)
+		})
+	}
+}
+
+func TestVersion_Compare_Echo_Build(t *testing.T) {
+	for _, eco := range []string{"npm", "NuGet"} {
+		t.Run("Echo:"+eco, func(t *testing.T) {
+			runAgainstEcosystemFixture(t, "Echo:"+eco, "echo-semver-versions.txt")
+		})
+	}
+}
+
+func TestVersion_Compare_Echo_DifferentSubEcosystems(t *testing.T) {
+	v, err := semantic.Parse("1.0.0", "Echo")
+
+	if err != nil {
+		t.Fatalf("failed to parse Echo version: %v", err)
+	}
+
+	w, err := semantic.Parse("1.0.0", "Echo:npm")
+
+	if err != nil {
+		t.Fatalf("failed to parse Echo:npm version: %v", err)
+	}
+
+	_, err = v.Compare(w)
+
+	if err == nil {
+		t.Fatalf("failed to detect different subecosystems")
+	}
+
+	if !errors.Is(err, semantic.ErrNotSameEcosystem) {
+		t.Errorf("Compare() error = %v, wantErr %v", err, semantic.ErrNotSameEcosystem)
 	}
 }
 
