@@ -106,9 +106,26 @@ func githubPURL(name, version string) *purl.PackageURL {
 	}
 }
 
+// EcosystemProvider can be implemented by package metadata that knows its OSV
+// ecosystem directly, such as metadata from SBOMs or from inputs that state the
+// ecosystem explicitly, rather than it being derived from the PURL type.
+type EcosystemProvider interface {
+	// Ecosystem returns the OSV ecosystem of the package, or an empty value if
+	// the metadata cannot determine it, in which case the ecosystem is derived
+	// from the PURL type as usual.
+	Ecosystem() osvecosystem.Parsed
+}
+
 // toEcosystem converts a SCALIBR package structure into an OSV ecosystem value
 // defined in https://ossf.github.io/osv-schema/#defined-ecosystems
 func toEcosystem(p *Package) osvecosystem.Parsed {
+	// An ecosystem provided by the metadata takes precedence over the PURL type
+	if ep, ok := p.Metadata.(EcosystemProvider); ok {
+		if eco := ep.Ecosystem(); !eco.IsEmpty() {
+			return eco
+		}
+	}
+
 	switch p.PURLType {
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
 		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeFreeBSD:
